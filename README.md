@@ -1,3 +1,5 @@
-This will be a sudoku prgoram written in Python supporting 4x4 dimensions using Hexadecimals in addition to typical 3x3 sudokus. 
+This will be a sudoku prgoram written in Python supporting dimeonsions of n by n, greater than typical 3x3 sudokus. 
 
-This is feature the abilities to generate as well as solve 3x3 and 4x4 sudokus.
+This will feature the abilities to generate as well as solve n by n sudokus.
+
+The reference I used for this project is Peter Norvig's algorithm for solving sudokus, which can be found at: http://norvig.com/sudoku.html
