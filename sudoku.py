@@ -44,13 +44,17 @@ def grid_values(grid):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  width = 1 + max(len(values[s]) for s in squares)  
+  width = max(2*len(values[s]) + 2 for s in squares)  
   # line is the horizontal line separating the square units 
   line = '+'.join(['-' * (width * n)] * n)
   for r in rows:
-    print( ''.join(values[r+c].center(width)+('|' if c in [cols[i*n] for i in range(1,n)] else '') for c in cols) )
     if r in [cols[i*n] for i in range(1,n)]:
       print( line )
+    for c in cols:
+      if c in [cols[i*n] for i in range(1,n)]:
+        print( '|', end='')
+      print( '('+' '.join(values[r+c])+') ', end='')
+    print()
 
 def assign(values, s, d):
   """This will remove all values in each square s but leave only d and propagate any impact which this might have on the peers of the square.
@@ -60,7 +64,7 @@ def assign(values, s, d):
   if all(eliminate(values, s, other_d) for other_d in other_values):
     return values
   else:
-    print( "assign returning False" )
+    print( "assign(%s, %s) returning False" % (s, d) )
     return False
 
 def eliminate(values, s, d):
@@ -74,23 +78,27 @@ def eliminate(values, s, d):
   values[s].remove(d)
   # Case 1) of propagation
   if len(values[s]) == 0:
-    print( "eliminate returning False" )
+    print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
     return False # This is a contradiction as we just removed the last value
   elif len(values[s]) == 1:
     remaining_d = values[s]
     if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
-      print( "eliminate returning False" )
+      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
       return False
   # Case 2) of propagation
   for u in units[s]:
     places = [s for s in u if d in values[s]]
+    print( "Units List of square: %s" % s )
+    print( u )
+    print( "Values List of square: %s" % s )
+    print( values[s] )
     if len(places) == 0:
-      print( "eliminate returning False" )
+      print( "eliminate(%s, %s) Case 2) len(places) == 0 returning False" % (s, d) )
       return False # This is a contradiction as there is no available place for this value in its units
     elif len(places) == 1:
       # Digit d only has one available place in its units, we will assign it there
       if not assign(values, places[0], d):
-        print( "eliminate returning False" )
+        print( "eliminate(%s, %s) Case 2) could not assign d to place[0] returning False" % (s, d) )
         return False
   return values
 
@@ -101,5 +109,7 @@ print( squares[0] )
 print( units[squares[0]] )
 print( set(sum(units[squares[0]], []))-set([squares[0]]) )
 
+# This generates a blank grid
+#grid1 = '.' * (n**4)
 grid1 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
 display(parse_grid(grid1))
