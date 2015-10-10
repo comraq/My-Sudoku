@@ -29,7 +29,7 @@ peers = dict((s, set(sum(units[s],[]))-set([s])) for s in squares)
 def parse_grid(grid):
   """This converts grid into a dict holding its possible values in the format of {square: values}. Otherwise, this will return false"""
   # We start with all values being appropriate for each square
-  values = dict((s, digits) for s in squares)
+  values = dict((s, list(digits)) for s in squares)
   for s,d in grid_values(grid).items():
     if d in digits and not assign(values, s, d):
       print( "parse_grid returning False" )
@@ -44,7 +44,7 @@ def grid_values(grid):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  width = max(2*len(values[s]) + 2 for s in squares)  
+  width = 2 * max(len(values[s]) for s in squares) + 2 
   # line is the horizontal line separating the square units 
   line = '+'.join(['-' * (width * n)] * n)
   for r in rows:
@@ -53,14 +53,14 @@ def display(values):
     for c in cols:
       if c in [cols[i*n] for i in range(1,n)]:
         print( '|', end='')
-      print( '('+' '.join(values[r+c])+') ', end='')
+      print( '('+' '.join(values[r+c])+')'+' '*(width - 2 - len(' '.join(values[r+c]))), end='')
     print()
 
 def assign(values, s, d):
   """This will remove all values in each square s but leave only d and propagate any impact which this might have on the peers of the square.
   This will return the updated values, however if a contradiction is detected, this will return False"""
-  values[s].remove(d)
-  other_values = values[s]
+  other_values = list(values[s])
+  other_values.remove(d)
   if all(eliminate(values, s, other_d) for other_d in other_values):
     return values
   else:
@@ -75,17 +75,24 @@ def eliminate(values, s, d):
   This will return values, however, if a contradiction is detected, this will return False"""
   if d not in values[s]:
     return values # Indicating that digit d was already eliminated from the possible values of square s
+  print( s, values[s] )
   values[s].remove(d)
+  print( s, values[s] )
   # Case 1) of propagation
   if len(values[s]) == 0:
     print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
     return False # This is a contradiction as we just removed the last value
   elif len(values[s]) == 1:
     remaining_d = values[s]
-    if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
-      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
-      return False
+    for peer_s in peers[s]:
+      if not eliminate(values, peer_s, remaining_d): 
+#    if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
+        print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
+        return False
+      else:
+        print( "eliminate remaining_d: %s from its peers_s: %s" % (remaining_d, peer_s) )
   # Case 2) of propagation
+  places = []
   for u in units[s]:
     places = [s for s in u if d in values[s]]
     print( "Units List of square: %s" % s )
@@ -102,14 +109,9 @@ def eliminate(values, s, d):
         return False
   return values
 
-print( digits )
-print( rows )
-print( squares )
-print( squares[0] )
-print( units[squares[0]] )
-print( set(sum(units[squares[0]], []))-set([squares[0]]) )
-
 # This generates a blank grid
-#grid1 = '.' * (n**4)
-grid1 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
-display(parse_grid(grid1))
+grid1 = '.' * (n**4)
+grid4 = '.............................................................................1...'
+grid2 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
+grid3 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
+display(parse_grid(grid4))
