@@ -75,30 +75,20 @@ def eliminate(values, s, d):
   This will return values, however, if a contradiction is detected, this will return False"""
   if d not in values[s]:
     return values # Indicating that digit d was already eliminated from the possible values of square s
-  print( s, values[s] )
   values[s].remove(d)
-  print( s, values[s] )
   # Case 1) of propagation
   if len(values[s]) == 0:
     print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
     return False # This is a contradiction as we just removed the last value
   elif len(values[s]) == 1:
-    remaining_d = values[s]
-    for peer_s in peers[s]:
-      if not eliminate(values, peer_s, remaining_d): 
-#    if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
-        print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
-        return False
-      else:
-        print( "eliminate remaining_d: %s from its peers_s: %s" % (remaining_d, peer_s) )
+    remaining_d = ''.join(values[s])
+    if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
+      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
+      return False
   # Case 2) of propagation
   places = []
   for u in units[s]:
     places = [s for s in u if d in values[s]]
-    print( "Units List of square: %s" % s )
-    print( u )
-    print( "Values List of square: %s" % s )
-    print( values[s] )
     if len(places) == 0:
       print( "eliminate(%s, %s) Case 2) len(places) == 0 returning False" % (s, d) )
       return False # This is a contradiction as there is no available place for this value in its units
@@ -111,7 +101,6 @@ def eliminate(values, s, d):
 
 # This generates a blank grid
 grid1 = '.' * (n**4)
-grid4 = '.............................................................................1...'
 grid2 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
 grid3 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
-display(parse_grid(grid4))
+display(parse_grid(grid2))
