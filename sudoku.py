@@ -125,7 +125,7 @@ def check_solve(values):
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
-    solutions = []
+    solutions = {}
     if verbose:
       display(values)
     rand_squares = list(squares)
@@ -138,19 +138,20 @@ def check_solve(values):
           values_copy = deepcopy(values)
           solved = rand_solve(assign(values_copy, s, d))
           if solved:
-            if len(solutions) > 0:
+            if solutions and any(solutions[s1] != solved[s1] for s1 in squares):
               if verbose:
-                display(solutions[0])
+                display(solutions)
                 display(solved)
               return 'multi'
             else:
-              solutions.append(solved)
-          else:
-            rand_values.remove(d)
-      else:
-        rand_squares.remove(s)
-    else:
-      return solutions[0]
+              solutions = solved
+              if verbose:
+                print( "Found a Solution! s = %s, d = %s" % (s, d) )
+                print( "Continue solving" )
+                display(solved)
+          rand_values.remove(d)
+      rand_squares.remove(s)
+    return solutions
       
 
 def fast_solve(values):
@@ -181,42 +182,61 @@ def rand_solve(values):
       display(values)
     rand_squares = list(squares)
     while len(rand_squares) > 0:
-      s = rand_squares[randrange(0, len(rand_squares))] 
+      s = rand_squares[randrange(0, len(rand_squares))]
       if len(values[s]) > 1:
         rand_values = list(values[s])
         while len(rand_values) > 0:
-          d = rand_values[randrange(0, len(rand_values))]	  
+          d = rand_values[randrange(0, len(rand_values))]
           values_copy = deepcopy(values)
           solved = rand_solve(assign(values_copy, s, d))
           if solved:
             return solved
           else:
             rand_values.remove(d)
-      else:
-        rand_squares.remove(s)
+      rand_squares.remove(s)
+
+def gen_grid(values):
+  """This is to """
+  pass
 
 # This generates a blank grid
 blank = '.' * (n**4)
 
 # A list of hard difficulty Sudokus, not solvable with only constraint propagation
 hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......',
-         '.....6....59.....82....8....45........3........6..3.54...325..6..................' ]
+         '409060010000007908000508000000400062070000090260009000000305000305700000010020504',
+         '000200030605090010000050900057800600806000401001005790008070000070030109090006000',
+         '000074316000603840000008500725800034000030050000002798008940000040085900971326485'  ]
+
+# A list of normal difficulty Sudokus, with challenge level between those of easy and hard
+normal = [ '600920005005780960010005000500600082000000000860009003000400030043078500700013009',
+           '5..26..1..2...75.......56......8.2348..643..5493.2......43.......91...2..6..74..3'  ]
 
 # A list of easy difficulty Sudokus, solvable only relying on constraint propagation
 easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
-         '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..',
-	 '003020600900305001001806400008102900700000008006708200002609500800203009005010300' ]
+	 '83.....1...42.8..6..23.589...5..6.8.9..5.7..3.6.9..7...568.91..7..1.25...2.....69',
+         '003020600900305001001806400008102900700000008006708200002609500800203009005010300'  ]
 
 # A list of multi-solution Sudokus, checkable via check_solve
-multi = ['906070403000400200070023010500000100040208060003000005030700050007005000405010708',
-         '.8...9743.5...8.1..1.......8....5......8.4......3....6.......7..3.5...8.9724...5.'] 
+multi = [ '906070403000400200070023010500000100040208060003000005030700050007005000405010708',
+          '.8...9743.5...8.1..1.......8....5......8.4......3....6.......7..3.5...8.9724...5.',
+          '.....6....59.....82....8....45........3........6..3.54...325..6..................'  ] 
 
 def choose_grid():
-  diff = input('Choose Sudoku difficulty (Sudoku number optional) (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku): ')
+  diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
+               'Enter q at anytime to quit\n')
+  if 'q' in diff:
+    return False
   if 'e' in diff:
     found_grid = ''.join([easy[i] for i in range(0, len(easy)) if str(i+1) in diff])
     if not found_grid:
       return easy[randrange(0, len(easy))]
+    else:
+      return found_grid
+  elif 'n' in diff:
+    found_grid = ''.join([normal[i] for i in range(0, len(normal)) if str(i+1) in diff])
+    if not found_grid:
+      return normal[randrange(0, len(normal))]
     else:
       return found_grid
   elif 'h' in diff:
@@ -237,8 +257,10 @@ def choose_grid():
 def interact():
   while True:
     grid = choose_grid()
+    if not grid:
+      break
     display(convert_grid(grid))
-    choice = input('Press Enter to Solve Grid, Type s to select another Sudoku, or q to Quit:\n'\
+    choice = input('Press Enter to Solve Grid or s to select another Sudoku:\n'\
                    'Include flags? (optional)\n'\
                    'd = display steps\n'\
                    'c = check solve\n'\
