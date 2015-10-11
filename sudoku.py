@@ -117,24 +117,25 @@ def eliminate(values, s, d):
         return False
   return values
 
-def solve(grid):
-  return search_solve(parse_grid(grid))
+def check_solve(grid):
+  """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
+     If multiple solutions are found, returns 'multi'"""
+  return fast_solve(parse_grid(grid))
 
-def search_solve(values):
+def fast_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
+    if verbose:
+      display(values)
     # Chosing an unfilled square s with the fewest possible values
     min_number, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
-    if verbose:
-      print( "Square: %s has the fewest possible values" % s )
-      display(values)
     for d in values[s]:
       values_copy = deepcopy(values)
-      solved = search_solve(assign(values_copy, s, d))
+      solved = fast_solve(assign(values_copy, s, d))
       if solved:
         return solved
 
@@ -145,14 +146,14 @@ def rand_solve(values):
   if all(len(values[s]) == 1 for s in squares):
     return values
   else:
+    if verbose:
+      display(values)
     rand_squares = list(squares)
-    while True:
+    while len(rand_squares) > 0:
       s = rand_squares[randrange(0, len(rand_squares))] 
       if len(values[s]) > 1:
         rand_values = list(values[s])
-        print( values[s], s )
-        while True:
-          print( rand_values )
+        while len(rand_values) > 0:
           d = rand_values[randrange(0, len(rand_values))]	  
           values_copy = deepcopy(values)
           solved = rand_solve(assign(values_copy, s, d))
@@ -166,36 +167,56 @@ def rand_solve(values):
 # This generates a blank grid
 blank = '.' * (n**4)
 
-# This is a hard difficulty Sudoku, not solvable with only constraint propagation
+# A list of hard difficulty Sudokus, not solvable with only constraint propagation
 hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......', 
          '.....6....59.....82....8....45........3........6..3.54...325..6..................' ]
 
-# this is an easy difficulty Sudoku, solvable only relying on constraint propagation
+# A list of easy difficulty Sudokus, solvable only relying on constraint propagation
 easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
          '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..',
 	 '003020600900305001001806400008102900700000008006708200002609500800203009005010300' ]
 
-def interact():
-  grid = blank
-  
-  diff = input('Choose Sudoku difficulty (e = easy, h = hard): ')
-  if diff == 'e':
-    grid = easy[randrange(0, len(easy))]
-  elif diff == 'h':
-    grid = hard[randrange(0, len(hard))]
-  
-  display(convert_grid(grid))
-  while True:
-    choice = input('Press Enter to Solve Grid, p to Perform Preliminary Elimination or Type q to Quit: ')
-    if choice == 'p':
-      display(parse_grid(grid))
-    elif choice == 'q':
-      break
+def choose_grid():
+  diff = input('Choose Sudoku difficulty (Sudoku number optional) (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku): ')
+  if 'e' in diff:
+    found_grid = ''.join([easy[i] for i in range(0, len(easy)) if str(i+1) in diff])
+    if not found_grid:
+      return easy[randrange(0, len(easy))]
     else:
-      if input('Display steps (y to display)? ') == 'y':
+      return found_grid
+  elif 'h' in diff:
+    found_grid = ''.join([hard[i] for i in range(0, len(hard)) if str(i+1) in diff])
+    if not found_grid:
+      return hard[randrange(0, len(hard))]
+    else:
+      return found_grid
+  else:
+    return blank
+
+def interact():
+  while True:
+    grid = choose_grid()
+    display(convert_grid(grid))
+    choice = input('Press Enter to Solve Grid, Type r to select another Sudoku, or q to Quit: ')
+    if choice == 'q':
+      break
+    elif not choice:
+      flags = input('Include optional flags?\n'\
+                    'd = display steps\n'\
+                    'c = check solve\n'\
+                    'f = fast solve\n'\
+                    'r = random solve\n')
+      if 'd' in flags:
         global verbose
         verbose = True
-      display(solve(grid))
+      if 'c' in flags:
+        solve = check_solve(parse_grid(grid))
+      elif 'r' in flags:
+        solve = rand_solve(parse_grid(grid))
+      else:
+        solve = fast_solve(parse_grid(grid))
+      display(solve)
       break
-
+    else:
+      print()
 interact()
