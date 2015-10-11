@@ -8,10 +8,15 @@ Grid - Synonomous with the Sudoku board, grid represent the current Sudoku board
 
 import string
 
+from random import randrange
 from copy import deepcopy
 from time import sleep
 
-n = int(input('Enter the desired size n: '))
+# Dimensions of Sudoku specificed by size n
+n = 3 # n = int(input('Enter the desired size n: '))
+
+# Verbose flag
+verbose = False
 
 def cross(A, B):
   # Returning the Cross Product of elements in A and of elements in B as a list
@@ -35,9 +40,19 @@ def parse_grid(grid):
   values = dict((s, list(digits)) for s in squares)
   for s,d in grid_values(grid).items():
     if d in digits and not assign(values, s, d):
-      print( "parse_grid returning False" )
       return False #This is an indication that we cannot assign digit d into square s
   return values
+
+def convert_grid(grid):
+  """Same as parse grid except without any preliminary contraint propagation"""
+  values = dict((s, list(digits)) for s in squares)
+  for s,d in grid_values(grid).items():
+    if not d in digits:
+      values[s] = ' '
+    else:
+      values[s] = d
+  return values
+  
 
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
@@ -72,7 +87,6 @@ def assign(values, s, d):
   if all(eliminate(values, s, other_d) for other_d in other_values):
     return values
   else:
-#    print( "assign(%s, %s) returning False" % (s, d) )
     return False
 
 def eliminate(values, s, d):
@@ -86,71 +100,102 @@ def eliminate(values, s, d):
   values[s].remove(d)
   # Case 1) of propagation
   if len(values[s]) == 0:
-#    print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
     return False # This is a contradiction as we just removed the last value
   elif len(values[s]) == 1:
     remaining_d = ''.join(values[s])
     if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
-#      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
       return False
   # Case 2) of propagation
   places = []
   for u in units[s]:
     places = [s for s in u if d in values[s]]
     if len(places) == 0:
-#      print( "eliminate(%s, %s) Case 2) len(places) == 0 returning False" % (s, d) )
       return False # This is a contradiction as there is no available place for this value in its units
     elif len(places) == 1:
       # Digit d only has one available place in its units, we will assign it there
       if not assign(values, places[0], d):
-#        print( "eliminate(%s, %s) Case 2) could not assign d to place[0] returning False" % (s, d) )
         return False
   return values
 
 def solve(grid):
-  return search(parse_grid(grid))
+  return search_solve(parse_grid(grid))
 
-def search(values):
+def search_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
-    display(values)
     # Chosing an unfilled square s with the fewest possible values
     min_number, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
-    print( "Square: %s has the fewest possible values" % s )
+    if verbose:
+      print( "Square: %s has the fewest possible values" % s )
+      display(values)
     for d in values[s]:
       values_copy = deepcopy(values)
-      solved = search(assign(values_copy, s, d))
+      solved = search_solve(assign(values_copy, s, d))
       if solved:
         return solved
 
-def some(sequence):
-  """Given a sequence, this searches for an element in the sequence that is True (not empty) and return it.
-     Otherwise, returns False"""
-  for element in sequence:
-    if element:
-      return element
-    else:
-      return False
+def rand_solve(values):
+  """This is a clone of search, but this will generate a random solution instead."""
+  if values is False:
+    return False
+  if all(len(values[s]) == 1 for s in squares):
+    return values
+  else:
+    rand_squares = list(squares)
+    while True:
+      s = rand_squares[randrange(0, len(rand_squares))] 
+      if len(values[s]) > 1:
+        rand_values = list(values[s])
+        print( values[s], s )
+        while True:
+          print( rand_values )
+          d = rand_values[randrange(0, len(rand_values))]	  
+          values_copy = deepcopy(values)
+          solved = rand_solve(assign(values_copy, s, d))
+          if solved:
+            return solved
+          else:
+            rand_values.remove(d)
+      else:
+        rand_squares.remove(s)
 
 # This generates a blank grid
-grid0 = '.' * (n**4)
+blank = '.' * (n**4)
 
 # This is a hard difficulty Sudoku, not solvable with only constraint propagation
-grid1 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
-grid2 = '.....6....59.....82....8....45........3........6..3.54...325..6..................'
+hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......', 
+         '.....6....59.....82....8....45........3........6..3.54...325..6..................' ]
 
 # this is an easy difficulty Sudoku, solvable only relying on constraint propagation
-grid3 = '167000000050600047000300009641057000800060005000980716700008000490006050000000671'
-grid4 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
-grid5 = '003020600900305001001806400008102900700000008006708200002609500800203009005010300'
+easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
+         '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..',
+	 '003020600900305001001806400008102900700000008006708200002609500800203009005010300' ]
 
+def interact():
+  grid = blank
+  
+  diff = input('Choose Sudoku difficulty (e = easy, h = hard): ')
+  if diff == 'e':
+    grid = easy[randrange(0, len(easy))]
+  elif diff == 'h':
+    grid = hard[randrange(0, len(hard))]
+  
+  display(convert_grid(grid))
+  while True:
+    choice = input('Press Enter to Solve Grid, p to Perform Preliminary Elimination or Type q to Quit: ')
+    if choice == 'p':
+      display(parse_grid(grid))
+    elif choice == 'q':
+      break
+    else:
+      if input('Display steps (y to display)? ') == 'y':
+        global verbose
+        verbose = True
+      display(solve(grid))
+      break
 
-grid = grid1
-
-display(parse_grid(grid))
-input("Press Enter to Solve Grid")
-display(solve(grid))
+interact()
