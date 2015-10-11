@@ -8,6 +8,9 @@ Grid - Synonomous with the Sudoku board, grid represent the current Sudoku board
 
 import string
 
+from copy import deepcopy
+from time import sleep
+
 n = int(input('Enter the desired size n: '))
 
 def cross(A, B):
@@ -37,24 +40,29 @@ def parse_grid(grid):
   return values
 
 def grid_values(grid):
-  """This converts grid into a dict of {square: char} with '.' for empty squares and returns it"""
-  chars = [c for c in grid if c in digits or c == '.']
+  """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
+  chars = [c for c in grid if c in digits or c in '.0']
   assert len(chars) == (n**4)
   return dict(zip(squares, chars))
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  width = 2 * max(len(values[s]) for s in squares) + 2 
-  # line is the horizontal line separating the square units 
-  line = '+'.join(['-' * (width * n)] * n)
-  for r in rows:
-    if r in [cols[i*n] for i in range(1,n)]:
-      print( line )
-    for c in cols:
-      if c in [cols[i*n] for i in range(1,n)]:
-        print( '|', end='')
-      print( '('+' '.join(values[r+c])+')'+' '*(width - 2 - len(' '.join(values[r+c]))), end='')
-    print()
+  if values == False:
+    print ( "Contradiction reached! Please check grid." ) # values was returned as false from other functions
+  else:
+    width = 2 * max(len(values[s]) for s in squares) + 2 
+    # line is the horizontal line separating the square units 
+    line = '+'.join(['-' * (width * n)] * n)
+    for r in rows:
+      if r in [cols[i*n] for i in range(1,n)]:
+        print( line )
+      for c in cols:
+        if c in [cols[i*n] for i in range(1,n)]:
+          print( '|', end='')
+        print( '('+' '.join(values[r+c])+')'+' '*(width - 2 - len(' '.join(values[r+c]))), end='')
+      print()
+    print( flush=True )
+    sleep(.2)
 
 def assign(values, s, d):
   """This will remove all values in each square s but leave only d and propagate any impact which this might have on the peers of the square.
@@ -64,7 +72,7 @@ def assign(values, s, d):
   if all(eliminate(values, s, other_d) for other_d in other_values):
     return values
   else:
-    print( "assign(%s, %s) returning False" % (s, d) )
+#    print( "assign(%s, %s) returning False" % (s, d) )
     return False
 
 def eliminate(values, s, d):
@@ -78,29 +86,71 @@ def eliminate(values, s, d):
   values[s].remove(d)
   # Case 1) of propagation
   if len(values[s]) == 0:
-    print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
+#    print( "eliminate(%s, %s); Case 1) len(values[s]) == 0 returning False" % (s, d) )
     return False # This is a contradiction as we just removed the last value
   elif len(values[s]) == 1:
     remaining_d = ''.join(values[s])
     if not all(eliminate(values, peer_s, remaining_d) for peer_s in peers[s]):
-      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
+#      print( "eliminate(%s, %s); Case 1) eliminating remaining_d from peer_s returning False" % (s, d) )
       return False
   # Case 2) of propagation
   places = []
   for u in units[s]:
     places = [s for s in u if d in values[s]]
     if len(places) == 0:
-      print( "eliminate(%s, %s) Case 2) len(places) == 0 returning False" % (s, d) )
+#      print( "eliminate(%s, %s) Case 2) len(places) == 0 returning False" % (s, d) )
       return False # This is a contradiction as there is no available place for this value in its units
     elif len(places) == 1:
       # Digit d only has one available place in its units, we will assign it there
       if not assign(values, places[0], d):
-        print( "eliminate(%s, %s) Case 2) could not assign d to place[0] returning False" % (s, d) )
+#        print( "eliminate(%s, %s) Case 2) could not assign d to place[0] returning False" % (s, d) )
         return False
   return values
 
+def solve(grid):
+  return search(parse_grid(grid))
+
+def search(values):
+  """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
+  if values is False:
+    return False # This indicates that a recursive call to this function failed and its time to try another digit from values
+  if all(len(values[s]) == 1 for s in squares):
+    return values # All squares have only one possibility for values, in other words, SOLVED!
+  else:
+    display(values)
+    # Chosing an unfilled square s with the fewest possible values
+    min_number, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
+    print( "Square: %s has the fewest possible values" % s )
+    for d in values[s]:
+      values_copy = deepcopy(values)
+      solved = search(assign(values_copy, s, d))
+      if solved:
+        return solved
+
+def some(sequence):
+  """Given a sequence, this searches for an element in the sequence that is True (not empty) and return it.
+     Otherwise, returns False"""
+  for element in sequence:
+    if element:
+      return element
+    else:
+      return False
+
 # This generates a blank grid
-grid1 = '.' * (n**4)
-grid2 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
-grid3 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
-display(parse_grid(grid2))
+grid0 = '.' * (n**4)
+
+# This is a hard difficulty Sudoku, not solvable with only constraint propagation
+grid1 = '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......'
+grid2 = '.....6....59.....82....8....45........3........6..3.54...325..6..................'
+
+# this is an easy difficulty Sudoku, solvable only relying on constraint propagation
+grid3 = '167000000050600047000300009641057000800060005000980716700008000490006050000000671'
+grid4 = '..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..'
+grid5 = '003020600900305001001806400008102900700000008006708200002609500800203009005010300'
+
+
+grid = grid1
+
+display(parse_grid(grid))
+input("Press Enter to Solve Grid")
+display(solve(grid))
