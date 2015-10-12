@@ -18,6 +18,9 @@ n = 3 # n = int(input('Enter the desired size n: '))
 # Verbose flag
 verbose = False
 
+# Flag raised while in process of generating a Sudoku
+generating = False
+
 def cross(A, B):
   # Returning the Cross Product of elements in A and of elements in B as a list
   return [a+b for a in A for b in B]
@@ -53,12 +56,21 @@ def convert_grid(grid):
       values[s] = d
   return values
   
-
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
   chars = [c for c in grid if c in digits or c in '.0']
   assert len(chars) == (n**4)
   return dict(zip(squares, chars))
+
+def values_grid(values):
+  """Reverse of grid_values + convert/parse_grid, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
+  grid = ''
+  for s in squares:
+    if len(values[s]) > 1:
+      grid += '.'
+    else:
+      grid += ''.join(values[s])
+  return grid
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
@@ -119,6 +131,7 @@ def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
      If multiple solutions are found, returns 'multi' """
   if values is False:
+    print( "check_solve values is empty" )
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
@@ -142,11 +155,11 @@ def check_solve(values):
           print( "Found a Solution! s = %s, d = %s" % (s, d) )
           display(solved)
         if solutions:
-          print( "Multiple solutions found!" )
-          display(solved)
-          display(solutions)
+          if not generating:
+            print( "Multiple solutions found!" )
+            display(solved)
+            display(solutions)
           return 'multi'
-          # 
         else:
           solutions = solved
       rand_values.remove(d)
@@ -196,17 +209,20 @@ def rand_solve(values):
         rand_values.remove(d)
 
 def gen_values():
-  global verbose
-  """This will generate a grid of possible values at 3 difficulty levels: Easy, Normal or Hard all with unique solutions."""
+  """This will generate and return a list of possible values for a grid at 3 difficulty levels: Easy, Normal or Hard all with unique solutions."""
+  global generating
+  generating = True
   values = rand_solve(parse_grid(blank))
   rand_squares = list(squares)
-  verbose = True
   while len(rand_squares) > 0:
     s = rand_squares[randrange(0, len(rand_squares))]
+    rand_index = squares.index(s)
     removed_d = values[s]
     values[s] = digits
-    if check_solve(values) == 'multi':
+    finished = check_solve(parse_grid(values_grid(values)))
+    if finished == 'multi':
       values[s] = removed_d
+      generating = False
       return values
     rand_squares.remove(s)
 
@@ -262,6 +278,9 @@ def choose_grid():
       return multi[randrange(0, len(multi))]
     else:
       return found_grid
+  elif 'g' in diff:
+    print( "Generated Sudoku" )
+    return values_grid(gen_values())
   else:
     return blank
 
@@ -295,6 +314,3 @@ def interact():
       print()
 
 interact()
-
-#gen_values() still needs work
-# display(gen_values())
