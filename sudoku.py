@@ -62,9 +62,7 @@ def grid_values(grid):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  if values == 'multi':
-    print ( "Multiple Solutions Found!" ) # values was returned as false from other functions
-  else:
+  if values != 'multi':
     width = 2 * max(len(values[s]) for s in squares) + 2 
     # line is the horizontal line separating the square units 
     line = '+'.join(['-' * (width * n)] * n)
@@ -132,25 +130,26 @@ def check_solve(values):
     while len(rand_squares) > 0:
       s = rand_squares[randrange(0, len(rand_squares))]
       if len(values[s]) > 1:
-        rand_values = list(values[s])
-        while len(rand_values) > 0:
-          d = rand_values[randrange(0, len(rand_values))]
-          values_copy = deepcopy(values)
-          solved = rand_solve(assign(values_copy, s, d))
-          if solved:
-            if verbose:
-              print( "Found a Solution! s = %s, d = %s" % (s, d) )
-              display(solved)
-            if solutions and any(solutions[s1] != solved[s1] for s1 in squares):
-              if verbose:
-                print( "Below are two solutions:" )
-                display(solutions)
-                display(solved)
-              return 'multi'
-            else:
-              solutions = solved
-          rand_values.remove(d)
+        break
       rand_squares.remove(s)
+    rand_values = list(values[s])
+    while len(rand_values) > 0:
+      d = rand_values[randrange(0, len(rand_values))]
+      values_copy = deepcopy(values)
+      solved = rand_solve(assign(values_copy, s, d))
+      if solved:
+        if verbose:
+          print( "Found a Solution! s = %s, d = %s" % (s, d) )
+          display(solved)
+        if solutions:
+          print( "Multiple solutions found!" )
+          display(solved)
+          display(solutions)
+          return 'multi'
+          # 
+        else:
+          solutions = solved
+      rand_values.remove(d)
     return solutions
       
 
@@ -180,28 +179,21 @@ def rand_solve(values):
   else:
     if verbose:
       display(values)
-    #rand_squares = list(squares)
-    #while len(rand_squares) > 0:
-    #  s = rand_squares[randrange(0, len(rand_squares))]
-    #  print( "Taking out %s, %s left" % (s, len(rand_squares)) )
-    #  if len(rand_squares) == 1:
-    #    display(values)
-    while True:
-      s = squares[randrange(0, len(squares))]
+    rand_squares = list(squares)
+    while len(rand_squares) > 0:
+      s = rand_squares[randrange(0, len(rand_squares))]
       if len(values[s]) > 1:
         break
-    #if len(values[s]) > 1:
+      rand_squares.remove(s)
     rand_values = list(values[s])
     while len(rand_values) > 0:
       d = rand_values[randrange(0, len(rand_values))]
-      print( "Square %s, taking out %s, %s left" % (s, d, len(rand_values)) )
       values_copy = deepcopy(values)
       solved = rand_solve(assign(values_copy, s, d))
       if solved:
         return solved
       else:
         rand_values.remove(d)
-    #  rand_squares.remove(s)
 
 def gen_values():
   global verbose
