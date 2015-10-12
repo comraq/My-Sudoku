@@ -18,8 +18,9 @@ n = 3 # n = int(input('Enter the desired size n: '))
 # Verbose flag
 verbose = False
 
-# Flag raised while in process of generating a Sudoku
+# Flag used for the generation of Sudokus
 generating = False
+multiple = False 
 
 def cross(A, B):
   # Returning the Cross Product of elements in A and of elements in B as a list
@@ -58,9 +59,8 @@ def convert_grid(grid):
   
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
-  chars = [c for c in grid if c in digits or c in '.0']
-  assert len(chars) == (n**4)
-  return dict(zip(squares, chars))
+  assert len(grid) == (n**4)
+  return dict(zip(squares, grid))
 
 def values_grid(values):
   """Reverse of grid_values + convert/parse_grid, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
@@ -211,6 +211,7 @@ def rand_solve(values):
 def gen_values():
   """This will generate and return a list of possible values for a grid at 3 difficulty levels: Easy, Normal or Hard all with unique solutions."""
   global generating
+  global multiple
   generating = True
   values = rand_solve(parse_grid(blank))
   rand_squares = list(squares)
@@ -221,8 +222,10 @@ def gen_values():
     values[s] = digits
     finished = check_solve(parse_grid(values_grid(values)))
     if finished == 'multi':
-      values[s] = removed_d
+      if not multiple:
+        values[s] = removed_d
       generating = False
+      multiple = False
       return values
     rand_squares.remove(s)
 
@@ -230,52 +233,79 @@ def gen_values():
 blank = '.' * (n**4)
 
 # A list of hard difficulty Sudokus, not solvable with only constraint propagation
+# hard = [ [ '4', '.', '.', '.', '.', '.', '8', '.', '5', '.', '3', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '7', '.', '.', '.', '.', '.', '.', '2', '.', '.', '.', '.', '.', '6', '.', '.', '.', '.', '.', '8', '.', '4', '.', '.', '.', '.', '.', '.', '1', '.', '.', '.', '.', '.', '.', '.', '6', '.', '3', '.', '7', '.', '5','.','.','2','.','.','.','.','.','1','.','4','.','.','.','.','.','.'],
 hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......',
          '409060010000007908000508000000400062070000090260009000000305000305700000010020504',
          '000200030605090010000050900057800600806000401001005790008070000070030109090006000',
          '000074316000603840000008500725800034000030050000002798008940000040085900971326485'  ]
+hard1 = []
+for item in hard:
+  hard1.append([c for c in item if c in digits or c in '.0'])
+hard = hard1
 
 # A list of normal difficulty Sudokus, with challenge level between those of easy and hard
 normal = [ '600920005005780960010005000500600082000000000860009003000400030043078500700013009',
            '5..26..1..2...75.......56......8.2348..643..5493.2......43.......91...2..6..74..3'  ]
+normal1 = []
+for item in normal:
+  normal1.append([c for c in item if c in digits or c in '.0'])
+normal = normal1
 
 # A list of easy difficulty Sudokus, solvable only relying on constraint propagation
 easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
 	 '83.....1...42.8..6..23.589...5..6.8.9..5.7..3.6.9..7...568.91..7..1.25...2.....69',
          '003020600900305001001806400008102900700000008006708200002609500800203009005010300'  ]
+easy1 = []
+for item in easy:
+  easy1.append([c for c in item if c in digits or c in '.0'])
+easy = easy1
 
 # A list of multi-solution Sudokus, checkable via check_solve
 multi = [ '906070403000400200070023010500000100040208060003000005030700050007005000405010708',
           '.8...9743.5...8.1..1.......8....5......8.4......3....6.......7..3.5...8.9724...5.',
           '.....6....59.....82....8....45........3........6..3.54...325..6..................'  ] 
+multi1 = []
+for item in multi:
+  multi1.append([c for c in item if c in digits or c in '.0'])
+multi = multi1
 
 def choose_grid():
+  global multiple
   diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
                'Enter q at anytime to quit\n')
   if 'q' in diff:
     return False
   if 'e' in diff:
-    found_grid = ''.join([easy[i] for i in range(0, len(easy)) if str(i+1) in diff])
+    for i in range(0, len(easy)):
+      if str(i+1) in diff:
+        found_grid = easy[i]
     if not found_grid:
       return easy[randrange(0, len(easy))]
     else:
       return found_grid
   elif 'n' in diff:
-    found_grid = ''.join([normal[i] for i in range(0, len(normal)) if str(i+1) in diff])
+    for i in range(0, len(normal)):
+      if str(i+1) in diff:
+        found_grid = normal[i]
     if not found_grid:
       return normal[randrange(0, len(normal))]
     else:
       return found_grid
   elif 'h' in diff:
-    found_grid = ''.join([hard[i] for i in range(0, len(hard)) if str(i+1) in diff])
+    for i in range(0, len(hard)):
+      if str(i+1) in diff:
+        found_grid = hard[i]
     if not found_grid:
       return hard[randrange(0, len(hard))]
     else:
       return found_grid
   elif 'm' in diff:
-    found_grid = ''.join([multi[i] for i in range(0, len(multi)) if str(i+1) in diff])
+    for i in range(0, len(multi)):
+      if str(i+1) in diff:
+        found_grid = multi[i]
     if not found_grid:
-      return multi[randrange(0, len(multi))]
+      multiple = True
+      return values_grid(gen_values())
     else:
       return found_grid
   elif 'g' in diff:
