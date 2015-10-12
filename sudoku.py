@@ -138,17 +138,17 @@ def check_solve(values):
           values_copy = deepcopy(values)
           solved = rand_solve(assign(values_copy, s, d))
           if solved:
+            if verbose:
+              print( "Found a Solution! s = %s, d = %s" % (s, d) )
+              display(solved)
             if solutions and any(solutions[s1] != solved[s1] for s1 in squares):
               if verbose:
+                print( "Below are two solutions:" )
                 display(solutions)
                 display(solved)
               return 'multi'
             else:
               solutions = solved
-              if verbose:
-                print( "Found a Solution! s = %s, d = %s" % (s, d) )
-                print( "Continue solving" )
-                display(solved)
           rand_values.remove(d)
       rand_squares.remove(s)
     return solutions
@@ -180,24 +180,43 @@ def rand_solve(values):
   else:
     if verbose:
       display(values)
-    rand_squares = list(squares)
-    while len(rand_squares) > 0:
-      s = rand_squares[randrange(0, len(rand_squares))]
+    #rand_squares = list(squares)
+    #while len(rand_squares) > 0:
+    #  s = rand_squares[randrange(0, len(rand_squares))]
+    #  print( "Taking out %s, %s left" % (s, len(rand_squares)) )
+    #  if len(rand_squares) == 1:
+    #    display(values)
+    while True:
+      s = squares[randrange(0, len(squares))]
       if len(values[s]) > 1:
-        rand_values = list(values[s])
-        while len(rand_values) > 0:
-          d = rand_values[randrange(0, len(rand_values))]
-          values_copy = deepcopy(values)
-          solved = rand_solve(assign(values_copy, s, d))
-          if solved:
-            return solved
-          else:
-            rand_values.remove(d)
-      rand_squares.remove(s)
+        break
+    #if len(values[s]) > 1:
+    rand_values = list(values[s])
+    while len(rand_values) > 0:
+      d = rand_values[randrange(0, len(rand_values))]
+      print( "Square %s, taking out %s, %s left" % (s, d, len(rand_values)) )
+      values_copy = deepcopy(values)
+      solved = rand_solve(assign(values_copy, s, d))
+      if solved:
+        return solved
+      else:
+        rand_values.remove(d)
+    #  rand_squares.remove(s)
 
-def gen_grid(values):
-  """This is to """
-  pass
+def gen_values():
+  global verbose
+  """This will generate a grid of possible values at 3 difficulty levels: Easy, Normal or Hard all with unique solutions."""
+  values = rand_solve(parse_grid(blank))
+  rand_squares = list(squares)
+  verbose = True
+  while len(rand_squares) > 0:
+    s = rand_squares[randrange(0, len(rand_squares))]
+    removed_d = values[s]
+    values[s] = digits
+    if check_solve(values) == 'multi':
+      values[s] = removed_d
+      return values
+    rand_squares.remove(s)
 
 # This generates a blank grid
 blank = '.' * (n**4)
@@ -284,3 +303,6 @@ def interact():
       print()
 
 interact()
+
+#gen_values() still needs work
+# display(gen_values())
