@@ -13,7 +13,7 @@ from copy import deepcopy
 from time import sleep
 
 # Dimensions of Sudoku specificed by size n
-n = 3 # n = int(input('Enter the desired size n: '))
+n = 4 # n = int(input('Enter the desired size n: '))
 
 # Verbose flag
 verbose = False
@@ -56,7 +56,16 @@ def convert_grid(grid):
     else:
       values[s] = d
   return values
-  
+
+def parse_values(values):
+  """Same as parse grid except this takes values (a dict) as a parameter instead of a list"""
+  new_values = dict((s, list(digits)) for s in squares)
+  for s,d in values.items():
+    d = ''.join(d) #This is necessary as values[s] may be a list with len == 1, but we need the string inside it
+    if d in digits and not assign(new_values, s, d):
+      return False #This is an indication that we cannot assign digit d into square s
+  return new_values
+
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
   assert len(grid) == (n**4)
@@ -131,7 +140,6 @@ def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
      If multiple solutions are found, returns 'multi' """
   if values is False:
-    print( "check_solve values is empty" )
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
@@ -165,6 +173,25 @@ def check_solve(values):
       rand_values.remove(d)
     return solutions
       
+def gen_values():
+  """This will generate and return a list of possible values for a grid at 2 difficulty levels: Easy or Hard all with unique solutions."""
+  global generating
+  global multiple
+  generating = True
+  values = rand_solve(parse_grid(blank))
+  rand_squares = list(squares)
+  while len(rand_squares) > 0:
+    s = rand_squares[randrange(0, len(rand_squares))]
+    removed_d = values[s]
+    values[s] = '.'
+    finished = check_solve(parse_values(values))
+    if finished == 'multi':
+      if not multiple:
+        values[s] = removed_d
+      generating = False
+      multiple = False
+      return values
+    rand_squares.remove(s)
 
 def fast_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
@@ -208,32 +235,10 @@ def rand_solve(values):
       else:
         rand_values.remove(d)
 
-def gen_values():
-  """This will generate and return a list of possible values for a grid at 3 difficulty levels: Easy, Normal or Hard all with unique solutions."""
-  global generating
-  global multiple
-  generating = True
-  values = rand_solve(parse_grid(blank))
-  rand_squares = list(squares)
-  while len(rand_squares) > 0:
-    s = rand_squares[randrange(0, len(rand_squares))]
-    rand_index = squares.index(s)
-    removed_d = values[s]
-    values[s] = digits
-    finished = check_solve(parse_grid(values_grid(values)))
-    if finished == 'multi':
-      if not multiple:
-        values[s] = removed_d
-      generating = False
-      multiple = False
-      return values
-    rand_squares.remove(s)
-
 # This generates a blank grid
 blank = '.' * (n**4)
 
 # A list of hard difficulty Sudokus, not solvable with only constraint propagation
-# hard = [ [ '4', '.', '.', '.', '.', '.', '8', '.', '5', '.', '3', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '7', '.', '.', '.', '.', '.', '.', '2', '.', '.', '.', '.', '.', '6', '.', '.', '.', '.', '.', '8', '.', '4', '.', '.', '.', '.', '.', '.', '1', '.', '.', '.', '.', '.', '.', '.', '6', '.', '3', '.', '7', '.', '5','.','.','2','.','.','.','.','.','1','.','4','.','.','.','.','.','.'],
 hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......',
          '409060010000007908000508000000400062070000090260009000000305000305700000010020504',
          '000200030605090010000050900057800600806000401001005790008070000070030109090006000',
@@ -243,18 +248,13 @@ for item in hard:
   hard1.append([c for c in item if c in digits or c in '.0'])
 hard = hard1
 
-# A list of normal difficulty Sudokus, with challenge level between those of easy and hard
-normal = [ '600920005005780960010005000500600082000000000860009003000400030043078500700013009',
-           '5..26..1..2...75.......56......8.2348..643..5493.2......43.......91...2..6..74..3'  ]
-normal1 = []
-for item in normal:
-  normal1.append([c for c in item if c in digits or c in '.0'])
-normal = normal1
-
 # A list of easy difficulty Sudokus, solvable only relying on constraint propagation
 easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
 	 '83.....1...42.8..6..23.589...5..6.8.9..5.7..3.6.9..7...568.91..7..1.25...2.....69',
-         '003020600900305001001806400008102900700000008006708200002609500800203009005010300'  ]
+         '003020600900305001001806400008102900700000008006708200002609500800203009005010300',
+         '600920005005780960010005000500600082000000000860009003000400030043078500700013009',
+         '5..26..1..2...75.......56......8.2348..643..5493.2......43.......91...2..6..74..3'  ]
+
 easy1 = []
 for item in easy:
   easy1.append([c for c in item if c in digits or c in '.0'])
@@ -278,36 +278,19 @@ def choose_grid():
   if 'e' in diff:
     for i in range(0, len(easy)):
       if str(i+1) in diff:
-        found_grid = easy[i]
-    if not found_grid:
-      return easy[randrange(0, len(easy))]
-    else:
-      return found_grid
-  elif 'n' in diff:
-    for i in range(0, len(normal)):
-      if str(i+1) in diff:
-        found_grid = normal[i]
-    if not found_grid:
-      return normal[randrange(0, len(normal))]
-    else:
-      return found_grid
+        return easy[i]
+    return easy[randrange(0, len(easy))]
   elif 'h' in diff:
     for i in range(0, len(hard)):
       if str(i+1) in diff:
-        found_grid = hard[i]
-    if not found_grid:
-      return hard[randrange(0, len(hard))]
-    else:
-      return found_grid
+        return hard[i]
+    return hard[randrange(0, len(hard))]
   elif 'm' in diff:
     for i in range(0, len(multi)):
       if str(i+1) in diff:
-        found_grid = multi[i]
-    if not found_grid:
-      multiple = True
-      return values_grid(gen_values())
-    else:
-      return found_grid
+        return multi[i]
+    multiple = True
+    return values_grid(gen_values())
   elif 'g' in diff:
     print( "Generated Sudoku" )
     return values_grid(gen_values())
