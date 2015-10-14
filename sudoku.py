@@ -68,7 +68,7 @@ def parse_values(values):
 
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
-  assert len(grid) == (n**4)
+  assert len(grid) == (n**4) #TODO: Currently assertion error for n > 3 due to certain digits having 2 place values
   return dict(zip(squares, grid))
 
 def values_grid(values):
@@ -175,6 +175,7 @@ def check_solve(values):
       
 def gen_values():
   """This will generate and return a list of possible values for a grid at 2 difficulty levels: Easy or Hard all with unique solutions."""
+  # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
   global generating
   global multiple
   generating = True
@@ -183,7 +184,7 @@ def gen_values():
   while len(rand_squares) > 0:
     s = rand_squares[randrange(0, len(rand_squares))]
     removed_d = values[s]
-    values[s] = '.'
+    values[s] = ' '
     finished = check_solve(parse_values(values))
     if finished == 'multi':
       if not multiple:
@@ -237,6 +238,10 @@ def rand_solve(values):
 
 # This generates a blank grid
 blank = '.' * (n**4)
+blank1 = []
+for item in blank:
+  blank1.append([c for c in item if c in digits or c in '.0'])
+hard = blank1
 
 # A list of hard difficulty Sudokus, not solvable with only constraint propagation
 hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......',
@@ -278,31 +283,32 @@ def choose_grid():
   if 'e' in diff:
     for i in range(0, len(easy)):
       if str(i+1) in diff:
-        return easy[i]
-    return easy[randrange(0, len(easy))]
+        return convert_grid(easy[i])
+    return convert_grid(easy[randrange(0, len(easy))])
   elif 'h' in diff:
     for i in range(0, len(hard)):
       if str(i+1) in diff:
-        return hard[i]
-    return hard[randrange(0, len(hard))]
+        return convert_grid(hard[i])
+    return convert_grid(hard[randrange(0, len(hard))])
   elif 'm' in diff:
     for i in range(0, len(multi)):
       if str(i+1) in diff:
-        return multi[i]
+        return convert_grid(multi[i])
     multiple = True
-    return values_grid(gen_values())
+    return gen_values()
   elif 'g' in diff:
     print( "Generated Sudoku" )
-    return values_grid(gen_values())
+    return gen_values()
   else:
-    return blank
+    return convert_grid(blank)
 
 def interact():
   while True:
     grid = choose_grid()
     if not grid:
       break
-    display(convert_grid(grid))
+    #display(convert_grid(grid))
+    display(grid)
     choice = input('Press Enter to Solve Grid or s to select another Sudoku:\n'\
                    'Include flags? (optional)\n'\
                    'd = display steps\n'\
@@ -316,11 +322,14 @@ def interact():
         global verbose
         verbose = True
       if 'c' in choice:
-        solve = check_solve(parse_grid(grid))
+        #solve = check_solve(parse_grid(grid))
+        solve = check_solve(parse_values(grid))
       elif 'r' in choice:
-        solve = rand_solve(parse_grid(grid))
+        #solve = rand_solve(parse_grid(grid))
+        solve = rand_solve(parse_values(grid))
       else:
-        solve = fast_solve(parse_grid(grid))
+        #solve = fast_solve(parse_grid(grid))
+        solve = fast_solve(parse_values(grid))
       display(solve)
       break
     else:
