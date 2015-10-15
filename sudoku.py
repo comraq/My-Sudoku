@@ -3,17 +3,13 @@ size n - Dimensions for the Sudoku, typically n=3 but can be resized
 Square - Individual block occupied by each value 
 Unit - a collection of n^2 squares either in the same box, column or row as a particular Square, that are filled with permutations of values 0 to 2^n - 1  
 Peer -  The squares belonging to the same unit as the Square, there are 2*(n^2 -1) + 2^(n-1) peers for each Square
-Grid - Synonomous with the Sudoku board, grid represent the current Sudoku board
-"""
+Grid - Synonomous with the Sudoku board, grid represent the current Sudoku board"""
 
 import string
 
 from random import randrange
 from copy import deepcopy
 from time import sleep
-
-# Dimensions of Sudoku specificed by size n
-n = 4 # n = int(input('Enter the desired size n: '))
 
 # Verbose flag
 verbose = False
@@ -22,43 +18,70 @@ verbose = False
 generating = False
 multiple = False 
 
+# Declare the necessary global variables
+n = 3
+digits = []
+rows = []
+cols = []
+squares = []
+unitList = []
+units = {}
+peers = {}
+
+# Template for blank/empty grid
+blank = ''
+
+# A list of hard difficulty Sudokus, not solvable with only constraint propagation
+hard = [ '4 . . . . . 8 . 5 . 3 . . . . . . . . . . 7 . . . . . . 2 . . . . . 6 . . . . . 8 . 4 . . . . . . 1 . . . . . . . 6 . 3 . 7 . 5 . . 2 . . . . . 1 . 4 . . . . . .',
+         '4 0 9 0 6 0 0 1 0 0 0 0 0 0 7 9 0 8 0 0 0 5 0 8 0 0 0 0 0 0 4 0 0 0 6 2 0 7 0 0 0 0 0 9 0 2 6 0 0 0 9 0 0 0 0 0 0 3 0 5 0 0 0 3 0 5 7 0 0 0 0 0 0 1 0 0 2 0 5 0 4',
+         '0 0 0 2 0 0 0 3 0 6 0 5 0 9 0 0 1 0 0 0 0 0 5 0 9 0 0 0 5 7 8 0 0 6 0 0 8 0 6 0 0 0 4 0 1 0 0 1 0 0 5 7 9 0 0 0 8 0 7 0 0 0 0 0 7 0 0 3 0 1 0 9 0 9 0 0 0 6 0 0 0',
+         '0 0 0 0 7 4 3 1 6 0 0 0 6 0 3 8 4 0 0 0 0 0 0 8 5 0 0 7 2 5 8 0 0 0 3 4 0 0 0 0 3 0 0 5 0 0 0 0 0 0 2 7 9 8 0 0 8 9 4 0 0 0 0 0 4 0 0 8 5 9 0 0 9 7 1 3 2 6 4 8 5'  ]
+
+# A list of easy difficulty Sudokus, solvable only relying on constraint propagation
+easy = [ '1 6 7 0 0 0 0 0 0 0 5 0 6 0 0 0 4 7 0 0 0 3 0 0 0 0 9 6 4 1 0 5 7 0 0 0 8 0 0 0 6 0 0 0 5 0 0 0 9 8 0 7 1 6 7 0 0 0 0 8 0 0 0 4 9 0 0 0 6 0 5 0 0 0 0 0 0 0 6 7 1',            '8 3 . . . . . 1 . . . 4 2 . 8 . . 6 . . 2 3 . 5 8 9 . . . 5 . . 6 . 8 . 9 . . 5 . 7 . . 3 . 6 . 9 . . 7 . . . 5 6 8 . 9 1 . . 7 . . 1 . 2 5 . . . 2 . . . . . 6 9',
+         '0 0 3 0 2 0 6 0 0 9 0 0 3 0 5 0 0 1 0 0 1 8 0 6 4 0 0 0 0 8 1 0 2 9 0 0 7 0 0 0 0 0 0 0 8 0 0 6 7 0 8 2 0 0 0 0 2 6 0 9 5 0 0 8 0 0 2 0 3 0 0 9 0 0 5 0 1 0 3 0 0',
+         '6 0 0 9 2 0 0 0 5 0 0 5 7 8 0 9 6 0 0 1 0 0 0 5 0 0 0 5 0 0 6 0 0 0 8 2 0 0 0 0 0 0 0 0 0 8 6 0 0 0 9 0 0 3 0 0 0 4 0 0 0 3 0 0 4 3 0 7 8 5 0 0 7 0 0 0 1 3 0 0 9',
+         '5 . . 2 6 . . 1 . . 2 . . . 7 5 . . . . . . . 5 6 . . . . . . 8 . 2 3 4 8 . . 6 4 3 . . 5 4 9 3 . 2 . . . . . . 4 3 . . . . . . . 9 1 . . . 2 . . 6 . . 7 4 . . 3'  ]
+
+# A list of multi-solution Sudokus, checkable via check_solve
+multi = [ '9 0 6 0 7 0 4 0 3 0 0 0 4 0 0 2 0 0 0 7 0 0 2 3 0 1 0 5 0 0 0 0 0 1 0 0 0 4 0 2 0 8 0 6 0 0 0 3 0 0 0 0 0 5 0 3 0 7 0 0 0 5 0 0 0 7 0 0 5 0 0 0 4 0 5 0 1 0 7 0 8',
+          '. 8 . . . 9 7 4 3 . 5 . . . 8 . 1 . . 1 . . . . . . . 8 . . . . 5 . . . . . . 8 . 4 . . . . . . 3 . . . . 6 . . . . . . . 7 . . 3 . 5 . . . 8 . 9 7 2 4 . . . 5 .',
+          '. . . . . 6 . . . . 5 9 . . . . . 8 2 . . . . 8 . . . . 4 5 . . . . . . . . 3 . . . . . . . . 6 . . 3 . 5 4 . . . 3 2 5 . . 6 . . . . . . . . . . . . . . . . . .'  ] 
+
+def initialize():
+  """This initializes the necessary global variables accordingly"""
+  global n
+  global digits
+  global rows
+  global cols
+  global squares
+  global unitList
+  global units
+  global peers
+  global blank
+  # Dimensions of Sudoku specificed by size n
+  n = int(input('Enter the desired size n: '))
+  digits = [ str(i+1) for i in range(n**2) ]
+  rows = [ r for r in string.ascii_letters[:n**2] ]
+  cols = rows
+  # Define squares as a list for Squares
+  squares = cross(rows, cols)
+  unitList = ([cross(rows, c) for c in cols] +
+              [cross(r, cols) for r in rows] +
+              [cross(rb, cb) for rb in [ ''.join( rows[i*n : (i+1)*n] ) for i in range(n) ] for cb in [ ''.join( cols[i*n : (i+1)*n] ) for i in range(n) ]])
+  # Define units and peers as a list stored in a dict that can be accessed by using Square as the key
+  units = dict((s, [u for u in unitList if s in u]) for s in squares)
+  peers = dict((s, set(sum(units[s],[]))-set([s])) for s in squares)
+  # Generate the blank grid according to specified dimensions
+  blank = '. ' * (n**4 - 1) + '.'
+
+
 def cross(A, B):
   # Returning the Cross Product of elements in A and of elements in B as a list
   return [a+b for a in A for b in B]
 
-digits = [ str(i+1) for i in range(n**2) ]
-rows = [ r for r in string.ascii_letters[:n**2] ]
-cols = rows
-# Define squares as a list for Squares
-squares = cross(rows, cols)
-unitList = ([cross(rows, c) for c in cols] +
-            [cross(r, cols) for r in rows] +
-	    [cross(rb, cb) for rb in [ ''.join( rows[i*n : (i+1)*n] ) for i in range(n) ] for cb in [ ''.join( cols[i*n : (i+1)*n] ) for i in range(n) ]])
-# Define units and peers as a list stored in a dict that can be accessed by using Square as the key
-units = dict((s, [u for u in unitList if s in u]) for s in squares)
-peers = dict((s, set(sum(units[s],[]))-set([s])) for s in squares)
-
-def parse_grid(grid):
-  """This converts grid into a dict holding its possible values in the format of {square: values}. Otherwise, this will return false"""
-  # We start with all values being appropriate for each square
-  values = dict((s, list(digits)) for s in squares)
-  for s,d in grid_values(grid).items():
-    if d in digits and not assign(values, s, d):
-      return False #This is an indication that we cannot assign digit d into square s
-  return values
-
-def convert_grid(grid):
-  """Same as parse grid except without any preliminary contraint propagation"""
-  values = dict((s, list(digits)) for s in squares)
-  for s,d in grid_values(grid).items():
-    if not d in digits:
-      values[s] = ' '
-    else:
-      values[s] = d
-  return values
-
 def parse_values(values):
-  """Same as parse grid except this takes values (a dict) as a parameter instead of a list"""
+  """This parses the dict values and assign all of its possible values in the format of {square: values}. Otherwise, this will return false"""
   new_values = dict((s, list(digits)) for s in squares)
   for s,d in values.items():
     d = ''.join(d) #This is necessary as values[s] may be a list with len == 1, but we need the string inside it
@@ -68,11 +91,23 @@ def parse_values(values):
 
 def grid_values(grid):
   """This converts grid into a dict of {square: char} with '.' or '0' for empty squares and returns it"""
-  assert len(grid) == (n**4) #TODO: Currently assertion error for n > 3 due to certain digits having 2 place values
-  return dict(zip(squares, grid))
+  sudoku_grid = []
+  s_val = ''
+  for c in grid:
+    if c in digits:
+      s_val += c
+    elif c in '.0':
+      s_val += ' '
+    elif c == ' ':
+      sudoku_grid.append(s_val)
+      s_val = ''
+  sudoku_grid.append(s_val) # Need to append last value in string to grid/list
+  assert len(sudoku_grid) == (n**4)
+  return dict(zip(squares, sudoku_grid))
 
+#TODO: values_grid necessary? Currently not being called/used
 def values_grid(values):
-  """Reverse of grid_values + convert/parse_grid, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
+  """Reverse of grid_values + parse_values, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
   grid = ''
   for s in squares:
     if len(values[s]) > 1:
@@ -179,7 +214,7 @@ def gen_values():
   global generating
   global multiple
   generating = True
-  values = rand_solve(parse_grid(blank))
+  values = rand_solve(parse_values(grid_values(blank)))
   rand_squares = list(squares)
   while len(rand_squares) > 0:
     s = rand_squares[randrange(0, len(rand_squares))]
@@ -236,44 +271,6 @@ def rand_solve(values):
       else:
         rand_values.remove(d)
 
-# This generates a blank grid
-blank = '.' * (n**4)
-blank1 = []
-for item in blank:
-  blank1.append([c for c in item if c in digits or c in '.0'])
-hard = blank1
-
-# A list of hard difficulty Sudokus, not solvable with only constraint propagation
-hard = [ '4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......',
-         '409060010000007908000508000000400062070000090260009000000305000305700000010020504',
-         '000200030605090010000050900057800600806000401001005790008070000070030109090006000',
-         '000074316000603840000008500725800034000030050000002798008940000040085900971326485'  ]
-hard1 = []
-for item in hard:
-  hard1.append([c for c in item if c in digits or c in '.0'])
-hard = hard1
-
-# A list of easy difficulty Sudokus, solvable only relying on constraint propagation
-easy = [ '167000000050600047000300009641057000800060005000980716700008000490006050000000671',
-	 '83.....1...42.8..6..23.589...5..6.8.9..5.7..3.6.9..7...568.91..7..1.25...2.....69',
-         '003020600900305001001806400008102900700000008006708200002609500800203009005010300',
-         '600920005005780960010005000500600082000000000860009003000400030043078500700013009',
-         '5..26..1..2...75.......56......8.2348..643..5493.2......43.......91...2..6..74..3'  ]
-
-easy1 = []
-for item in easy:
-  easy1.append([c for c in item if c in digits or c in '.0'])
-easy = easy1
-
-# A list of multi-solution Sudokus, checkable via check_solve
-multi = [ '906070403000400200070023010500000100040208060003000005030700050007005000405010708',
-          '.8...9743.5...8.1..1.......8....5......8.4......3....6.......7..3.5...8.9724...5.',
-          '.....6....59.....82....8....45........3........6..3.54...325..6..................'  ] 
-multi1 = []
-for item in multi:
-  multi1.append([c for c in item if c in digits or c in '.0'])
-multi = multi1
-
 def choose_grid():
   global multiple
   diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
@@ -283,31 +280,31 @@ def choose_grid():
   if 'e' in diff:
     for i in range(0, len(easy)):
       if str(i+1) in diff:
-        return convert_grid(easy[i])
-    return convert_grid(easy[randrange(0, len(easy))])
+        return grid_values(easy[i])
+    return grid_values(easy[randrange(0, len(easy))])
   elif 'h' in diff:
     for i in range(0, len(hard)):
       if str(i+1) in diff:
-        return convert_grid(hard[i])
-    return convert_grid(hard[randrange(0, len(hard))])
+        return grid_values(hard[i])
+    return grid_values(hard[randrange(0, len(hard))])
   elif 'm' in diff:
     for i in range(0, len(multi)):
       if str(i+1) in diff:
-        return convert_grid(multi[i])
+        return grid_values(multi[i])
     multiple = True
     return gen_values()
   elif 'g' in diff:
     print( "Generated Sudoku" )
     return gen_values()
   else:
-    return convert_grid(blank)
+    return grid_values(blank)
 
 def interact():
   while True:
+    initialize()
     grid = choose_grid()
     if not grid:
       break
-    #display(convert_grid(grid))
     display(grid)
     choice = input('Press Enter to Solve Grid or s to select another Sudoku:\n'\
                    'Include flags? (optional)\n'\
@@ -322,13 +319,10 @@ def interact():
         global verbose
         verbose = True
       if 'c' in choice:
-        #solve = check_solve(parse_grid(grid))
         solve = check_solve(parse_values(grid))
       elif 'r' in choice:
-        #solve = rand_solve(parse_grid(grid))
         solve = rand_solve(parse_values(grid))
       else:
-        #solve = fast_solve(parse_grid(grid))
         solve = fast_solve(parse_values(grid))
       display(solve)
       break
