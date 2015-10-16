@@ -38,7 +38,8 @@ hard = [ '4 . . . . . 8 . 5 . 3 . . . . . . . . . . 7 . . . . . . 2 . . . . . 6 
          '0 0 0 0 7 4 3 1 6 0 0 0 6 0 3 8 4 0 0 0 0 0 0 8 5 0 0 7 2 5 8 0 0 0 3 4 0 0 0 0 3 0 0 5 0 0 0 0 0 0 2 7 9 8 0 0 8 9 4 0 0 0 0 0 4 0 0 8 5 9 0 0 9 7 1 3 2 6 4 8 5'  ]
 
 # A list of easy difficulty Sudokus, solvable only relying on constraint propagation
-easy = [ '1 6 7 0 0 0 0 0 0 0 5 0 6 0 0 0 4 7 0 0 0 3 0 0 0 0 9 6 4 1 0 5 7 0 0 0 8 0 0 0 6 0 0 0 5 0 0 0 9 8 0 7 1 6 7 0 0 0 0 8 0 0 0 4 9 0 0 0 6 0 5 0 0 0 0 0 0 0 6 7 1',            '8 3 . . . . . 1 . . . 4 2 . 8 . . 6 . . 2 3 . 5 8 9 . . . 5 . . 6 . 8 . 9 . . 5 . 7 . . 3 . 6 . 9 . . 7 . . . 5 6 8 . 9 1 . . 7 . . 1 . 2 5 . . . 2 . . . . . 6 9',
+easy = [ '1 6 7 0 0 0 0 0 0 0 5 0 6 0 0 0 4 7 0 0 0 3 0 0 0 0 9 6 4 1 0 5 7 0 0 0 8 0 0 0 6 0 0 0 5 0 0 0 9 8 0 7 1 6 7 0 0 0 0 8 0 0 0 4 9 0 0 0 6 0 5 0 0 0 0 0 0 0 6 7 1',
+         '8 3 . . . . . 1 . . . 4 2 . 8 . . 6 . . 2 3 . 5 8 9 . . . 5 . . 6 . 8 . 9 . . 5 . 7 . . 3 . 6 . 9 . . 7 . . . 5 6 8 . 9 1 . . 7 . . 1 . 2 5 . . . 2 . . . . . 6 9',
          '0 0 3 0 2 0 6 0 0 9 0 0 3 0 5 0 0 1 0 0 1 8 0 6 4 0 0 0 0 8 1 0 2 9 0 0 7 0 0 0 0 0 0 0 8 0 0 6 7 0 8 2 0 0 0 0 2 6 0 9 5 0 0 8 0 0 2 0 3 0 0 9 0 0 5 0 1 0 3 0 0',
          '6 0 0 9 2 0 0 0 5 0 0 5 7 8 0 9 6 0 0 1 0 0 0 5 0 0 0 5 0 0 6 0 0 0 8 2 0 0 0 0 0 0 0 0 0 8 6 0 0 0 9 0 0 3 0 0 0 4 0 0 0 3 0 0 4 3 0 7 8 5 0 0 7 0 0 0 1 3 0 0 9',
          '5 . . 2 6 . . 1 . . 2 . . . 7 5 . . . . . . . 5 6 . . . . . . 8 . 2 3 4 8 . . 6 4 3 . . 5 4 9 3 . 2 . . . . . . 4 3 . . . . . . . 9 1 . . . 2 . . 6 . . 7 4 . . 3'  ]
@@ -209,7 +210,8 @@ def check_solve(values):
     return solutions
       
 def gen_values():
-  """This will generate and return a list of possible values for a grid at 2 difficulty levels: Easy or Hard all with unique solutions."""
+  """This will generate and return a list of possible values for a grid with a unique solution."""
+  # TODO: Implement more sophisticated generator algorithms, allowing for faster performance as well as varying difficulty
   # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
   global generating
   global multiple
@@ -239,7 +241,7 @@ def fast_solve(values):
     if verbose:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
-    min_number, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
+    min_vals, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
     for d in values[s]:
       values_copy = deepcopy(values)
       solved = fast_solve(assign(values_copy, s, d))
@@ -247,7 +249,7 @@ def fast_solve(values):
         return solved
 
 def rand_solve(values):
-  """This is a clone of search, but this will generate a random solution instead."""
+  """A clone of fast_solve utilizing brute force on random squares instead of min_vals squares."""
   if values is False:
     return False
   if all(len(values[s]) == 1 for s in squares):
