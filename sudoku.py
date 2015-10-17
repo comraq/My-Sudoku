@@ -119,7 +119,7 @@ def values_grid(values):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  if values != 'multi':
+  if not values in squares:
     width = 2 * max(len(values[s]) for s in squares) + 2 
     # line is the horizontal line separating the square units 
     line = '+'.join(['-' * (width * n)] * n)
@@ -174,7 +174,7 @@ def eliminate(values, s, d):
 
 def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
-     If multiple solutions are found, returns 'multi' """
+     If multiple solutions are found, returns the square which can hold multiple possible values yielding the second solution. """
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
@@ -203,7 +203,7 @@ def check_solve(values):
             print( "Multiple solutions found!" )
             display(solved)
             display(solutions)
-          return 'multi'
+          return s
         else:
           solutions = solved
       rand_values.remove(d)
@@ -223,13 +223,54 @@ def gen_values():
     removed_d = values[s]
     values[s] = ' '
     finished = check_solve(parse_values(values))
-    if finished == 'multi':
+    if finished in squares:
       if not multiple:
         values[s] = removed_d
       generating = False
       multiple = False
       return values
     rand_squares.remove(s)
+
+def gen_values_alt(min_start):
+  """An alternate version of gen_values using different algorithm, which should be slightly faster.
+     Currently, only implemented generating unique solutions, no multi solution Sudoku generating capabilities yet."""
+  global generating
+  generating = True
+  values = parse_values(grid_values(blank))
+  min_start = 20 # This number corresponds to the minimum bound of how many starting values are given in the generated Sudoku
+  rand_squares = list(squares)
+  while len(rand_squares) > (n**4 - min_start):
+    s = rand_squares[randrange(0, len(rand_squares))]
+    if len(values[s]) > 1:
+      rand_values = list(values[s])
+      while len(rand_values) > 0:
+        temp_values = deepcopy(values)
+        d = rand_values[randrange(0, len(rand_values))]
+        success = assign( temp_values, s, d )
+        if success:
+          values = success
+          break
+        rand_values.remove(d)
+    rand_squares.remove(s)
+  # Check whether the generated Sudoku yields a unique solution
+  while True:
+    multi_s = check_solve(values)
+    if multi_s in squares:
+      rand_values = list(values[s])
+      while len(rand_values) > 0:
+        temp_values = deepcopy(values)
+        d = rand_values[randrange(0, len(rand_values))]
+        success = assign( temp_values, multi_s, d )
+        if success:
+          values = success
+          break
+      rand_squares.remove(multi_s)
+    else:
+      break
+  for s in rand_squares:
+    values[s] = ' '
+  generating = False
+  return values
 
 def fast_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
@@ -298,6 +339,9 @@ def choose_grid():
   elif 'g' in diff:
     print( "Generated Sudoku" )
     return gen_values()
+  elif 'z' in diff:
+    print( "Generated Sudoku" )
+    return gen_values_alt(20)
   else:
     return grid_values(blank)
 
