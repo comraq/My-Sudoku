@@ -76,7 +76,6 @@ def initialize():
   # Generate the blank grid according to specified dimensions
   blank = '. ' * (n**4 - 1) + '.'
 
-
 def cross(A, B):
   # Returning the Cross Product of elements in A and of elements in B as a list
   return [a+b for a in A for b in B]
@@ -119,7 +118,7 @@ def values_grid(values):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  if not values in squares:
+  if isinstance(values, dict):
     width = 2 * max(len(values[s]) for s in squares) + 2 
     # line is the horizontal line separating the square units 
     line = '+'.join(['-' * (width * n)] * n)
@@ -193,8 +192,10 @@ def check_solve(values):
     while len(rand_values) > 0:
       d = rand_values[randrange(0, len(rand_values))]
       values_copy = deepcopy(values)
-      solved = rand_solve(assign(values_copy, s, d))
-      if solved:
+      solved = check_solve(assign(values_copy, s, d))
+      if solved in squares:
+        return solved
+      elif isinstance(solved, dict):
         if verbose:
           print( "Found a Solution! s = %s, d = %s" % (s, d) )
           display(solved)
@@ -231,44 +232,43 @@ def gen_values():
       return values
     rand_squares.remove(s)
 
-def gen_values_alt(min_start):
+def gen_values_alt(diff):
   """An alternate version of gen_values using different algorithm, which should be slightly faster.
-     Currently, only implemented generating unique solutions, no multi solution Sudoku generating capabilities yet."""
+     Currently, only implemented generating unique solutions, no multi solution Sudoku generating capabilities yet.
+     Takes a string diff indicating the difficulty, which determines the lower bound of how many starting values are given for the generated Sudoku."""
   global generating
   generating = True
-  values = parse_values(grid_values(blank))
-  min_start = 20 # This number corresponds to the minimum bound of how many starting values are given in the generated Sudoku
+  # min_start corresponds to the minimum bound of how many starting values are given in the generated Sudoku
+  if diff == 'hard':
+    min_start = 20
+  elif diff == 'easy':
+    min_start = 40
+  elif diff == 'multi':
+    min_start = 16
+  else: 
+    min_start = 30
+  values = rand_solve(parse_values(grid_values(blank)))
   rand_squares = list(squares)
-  while len(rand_squares) > (n**4 - min_start):
+  while len(rand_squares) > min_start:
     s = rand_squares[randrange(0, len(rand_squares))]
-    if len(values[s]) > 1:
-      rand_values = list(values[s])
-      while len(rand_values) > 0:
-        temp_values = deepcopy(values)
-        d = rand_values[randrange(0, len(rand_values))]
-        success = assign( temp_values, s, d )
-        if success:
-          values = success
-          break
-        rand_values.remove(d)
+    values[s] = ' '
     rand_squares.remove(s)
   # Check whether the generated Sudoku yields a unique solution
-  while True:
-    multi_s = check_solve(values)
-    if multi_s in squares:
-      rand_values = list(values[s])
-      while len(rand_values) > 0:
-        temp_values = deepcopy(values)
-        d = rand_values[randrange(0, len(rand_values))]
-        success = assign( temp_values, multi_s, d )
-        if success:
-          values = success
-          break
-      rand_squares.remove(multi_s)
-    else:
-      break
-  for s in rand_squares:
-    values[s] = ' '
+  if diff != 'multi':
+    while True:
+      multi_s = check_solve(values)
+      if multi_s in squares:
+        rand_values = list(values[multi_s])
+        while len(rand_values) > 0:
+          temp_values = deepcopy(values)
+          d = rand_values[randrange(0, len(rand_values))]
+          success = assign( temp_values, multi_s, d )
+          if success:
+            values = success
+            break
+        rand_squares.remove(multi_s)
+      else:
+        break
   generating = False
   return values
 
@@ -341,7 +341,14 @@ def choose_grid():
     return gen_values()
   elif 'z' in diff:
     print( "Generated Sudoku" )
-    return gen_values_alt(20)
+    if '2' in diff:
+      return gen_values_alt('hard')
+    elif '1' in diff:
+      return gen_values_alt('easy')
+    elif '3' in diff:
+      return gen_values_alt('multi')
+    else:
+      return gen_values_alt()
   else:
     return grid_values(blank)
 
