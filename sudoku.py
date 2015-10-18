@@ -254,9 +254,11 @@ def gen_values_alt(diff):
     values[s] = ' '
     rand_squares.remove(s)
   # Check whether the generated Sudoku yields a unique solution
+  # TODO: Currently the following check isn't functioning properly
   if diff != 'multi':
     while True:
-      multi_s = check_solve(values)
+      multi_s = check_solve(parse_values(values))
+      print( "Check for unique solution: " )
       if multi_s in squares:
         rand_values = list(values[multi_s])
         while len(rand_values) > 0:
@@ -348,7 +350,7 @@ def choose_grid():
     elif '3' in diff:
       return gen_values_alt('multi')
     else:
-      return gen_values_alt()
+      return gen_values_alt('')
   else:
     return grid_values(blank)
 
