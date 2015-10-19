@@ -16,7 +16,6 @@ verbose = False
 
 # Flag used for the generation of Sudokus
 generating = False
-multiple = False 
 
 # Declare the necessary global variables
 n = 3
@@ -210,12 +209,11 @@ def check_solve(values):
       rand_values.remove(d)
     return solutions
       
+# Implemented a faster alternative gen_values_alt, this function, gen_values, not necessary anymore?
 def gen_values():
   """This will generate and return a list of possible values for a grid with a unique solution."""
-  # TODO: Implement more sophisticated generator algorithms, allowing for faster performance as well as varying difficulty
   # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
   global generating
-  global multiple
   generating = True
   values = rand_solve(parse_values(grid_values(blank)))
   rand_squares = list(squares)
@@ -228,14 +226,12 @@ def gen_values():
       if not multiple:
         values[s] = removed_d
       generating = False
-      multiple = False
       return values
     rand_squares.remove(s)
 
 def gen_values_alt(diff):
   """An alternate version of gen_values using different algorithm, which should be slightly faster.
-     Currently, only implemented generating unique solutions, no multi solution Sudoku generating capabilities yet.
-     Takes a string diff indicating the difficulty, which determines the lower bound of how many starting values are given for the generated Sudoku."""
+     Takes a string diff indicating the difficulty or 'multi' to generate a multiple solution Sudoku, which determines the lower bound of how many starting values are given for the generated Sudoku."""
   global generating
   generating = True
   # min_start corresponds to the minimum bound of how many starting values are given in the generated Sudoku
@@ -253,22 +249,19 @@ def gen_values_alt(diff):
     s = rand_squares[randrange(0, len(rand_squares))]
     values[s] = ' '
     rand_squares.remove(s)
-  # Check whether the generated Sudoku yields a unique solution
-  # TODO: Currently the following check isn't functioning properly
+  # Check whether the generated Sudoku yields a unique solution, if not, add the square responsible for multiple solutions
   if diff != 'multi':
     while True:
       multi_s = check_solve(parse_values(values))
-      print( "Check for unique solution: " )
       if multi_s in squares:
-        rand_values = list(values[multi_s])
+        p_values = parse_values(values)
+        rand_values = list(p_values[multi_s])
         while len(rand_values) > 0:
-          temp_values = deepcopy(values)
           d = rand_values[randrange(0, len(rand_values))]
-          success = assign( temp_values, multi_s, d )
-          if success:
-            values = success
+          if assign( p_values, multi_s, d ):
+            # The should always be True as multi_s was returned by check_solve earlier, indicating that there is more than one solution at this square
+            values[multi_s] = d
             break
-        rand_squares.remove(multi_s)
       else:
         break
   generating = False
@@ -336,19 +329,13 @@ def choose_grid():
     for i in range(0, len(multi)):
       if str(i+1) in diff:
         return grid_values(multi[i])
-    multiple = True
-    return gen_values()
+    return gen_values_alt('multi')
   elif 'g' in diff:
-    print( "Generated Sudoku" )
-    return gen_values()
-  elif 'z' in diff:
     print( "Generated Sudoku" )
     if '2' in diff:
       return gen_values_alt('hard')
     elif '1' in diff:
       return gen_values_alt('easy')
-    elif '3' in diff:
-      return gen_values_alt('multi')
     else:
       return gen_values_alt('')
   else:
