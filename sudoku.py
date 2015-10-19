@@ -236,13 +236,13 @@ def gen_values_alt(diff):
   generating = True
   # min_start corresponds to the minimum bound of how many starting values are given in the generated Sudoku
   if diff == 'hard':
-    min_start = 20
+    min_start = (n ** 4)/4
   elif diff == 'easy':
-    min_start = 40
+    min_start = (n ** 4)/2
   elif diff == 'multi':
-    min_start = 16
+    min_start = (n ** 4)/5
   else: 
-    min_start = 30
+    min_start = (n ** 4)/3
   values = rand_solve(parse_values(grid_values(blank)))
   rand_squares = list(squares)
   while len(rand_squares) > min_start:
@@ -251,17 +251,20 @@ def gen_values_alt(diff):
     rand_squares.remove(s)
   # Check whether the generated Sudoku yields a unique solution, if not, add the square responsible for multiple solutions
   if diff != 'multi':
+    display(values)
     while True:
       multi_s = check_solve(parse_values(values))
       if multi_s in squares:
         p_values = parse_values(values)
-        rand_values = list(p_values[multi_s])
-        while len(rand_values) > 0:
-          d = rand_values[randrange(0, len(rand_values))]
-          if assign( p_values, multi_s, d ):
-            # The should always be True as multi_s was returned by check_solve earlier, indicating that there is more than one solution at this square
+        while len(p_values[multi_s]) > 0:
+          temp_values = deepcopy(p_values)
+          d = temp_values[multi_s][randrange(0, len(temp_values[multi_s]))]
+          if assign( temp_values, multi_s, d ):
+            p_values = temp_values
             values[multi_s] = d
             break
+          else:
+            p_values[multi_s].remove(d)
       else:
         break
   generating = False
