@@ -251,7 +251,6 @@ def gen_values_alt(diff):
     rand_squares.remove(s)
   # Check whether the generated Sudoku yields a unique solution, if not, add the square responsible for multiple solutions
   if diff != 'multi':
-    display(values)
     while True:
       multi_s = check_solve(parse_values(values))
       if multi_s in squares:
@@ -289,6 +288,7 @@ def fast_solve(values):
 
 def rand_solve(values):
   """A clone of fast_solve utilizing brute force on random squares instead of min_vals squares."""
+  # TODO: Need to find a faster algorithm for rand_solve as this is one of the bottlenecks of gen_values in terms of performance time
   if values is False:
     return False
   if all(len(values[s]) == 1 for s in squares):
