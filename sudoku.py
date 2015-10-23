@@ -104,17 +104,6 @@ def grid_values(grid):
   assert len(sudoku_grid) == (n**4)
   return dict(zip(squares, sudoku_grid))
 
-#TODO: values_grid necessary? Currently not being called/used
-def values_grid(values):
-  """Reverse of grid_values + parse_values, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
-  grid = ''
-  for s in squares:
-    if len(values[s]) > 1:
-      grid += '.'
-    else:
-      grid += ''.join(values[s])
-  return grid
-
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
   if isinstance(values, dict):
@@ -148,6 +137,7 @@ def eliminate(values, s, d):
     Case 1) If a square s is reduced to only one value remaining_d, then we eliminate all instances of remaining_d in its peers.
     Case 2) If a unit has only one place for value d, then we will put it there and eliminate d from the peers in its other units.
   This will return values, however, if a contradiction is detected, this will return False"""
+  # TODO: Need to add values elimination for logical rules such as naked/hidden tuples and etc...
   if d not in values[s]:
     return values # Indicating that digit d was already eliminated from the possible values of square s
   values[s].remove(d)
@@ -209,28 +199,8 @@ def check_solve(values):
       rand_values.remove(d)
     return solutions
       
-# Implemented a faster alternative gen_values_alt, this function, gen_values, not necessary anymore?
-def gen_values():
-  """This will generate and return a list of possible values for a grid with a unique solution."""
-  # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
-  global generating
-  generating = True
-  values = rand_solve(parse_values(grid_values(blank)))
-  rand_squares = list(squares)
-  while len(rand_squares) > 0:
-    s = rand_squares[randrange(0, len(rand_squares))]
-    removed_d = values[s]
-    values[s] = ' '
-    finished = check_solve(parse_values(values))
-    if finished in squares:
-      if not multiple:
-        values[s] = removed_d
-      generating = False
-      return values
-    rand_squares.remove(s)
-
-def gen_values_alt(diff):
-  """An alternate version of gen_values using different algorithm, which should be slightly faster.
+def gen_values(diff):
+  """This will generate and return a list of possible values for a grid with a unique solution.
      Takes a string diff indicating the difficulty or 'multi' to generate a multiple solution Sudoku, which determines the lower bound of how many starting values are given for the generated Sudoku."""
   global generating
   generating = True
@@ -269,6 +239,12 @@ def gen_values_alt(diff):
   generating = False
   return values
 
+class Solve(object):
+  """This is the parent Solve class for various different solving algorithms, being extended by subclasses such as Fast_solve, Rand_solve and etc..."""
+  def __init__(self, grid):
+    self.grid = grid
+    self.values = grid.values(grid) 
+
 def fast_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
   if values is False:
@@ -289,6 +265,7 @@ def fast_solve(values):
 def rand_solve(values):
   """A clone of fast_solve utilizing brute force on random squares instead of min_vals squares."""
   # TODO: Need to find a faster algorithm for rand_solve as this is one of the bottlenecks of gen_values in terms of performance time
+  # According to research and studies, adding additional logical rule constraints can speed up the sudoku solving process. Adding elimination checking for rules such as naked/hidden tuples and etc...
   if values is False:
     return False
   if all(len(values[s]) == 1 for s in squares):
@@ -332,15 +309,15 @@ def choose_grid():
     for i in range(0, len(multi)):
       if str(i+1) in diff:
         return grid_values(multi[i])
-    return gen_values_alt('multi')
+    return gen_values('multi')
   elif 'g' in diff:
     print( "Generated Sudoku" )
     if '2' in diff:
-      return gen_values_alt('hard')
+      return gen_values('hard')
     elif '1' in diff:
-      return gen_values_alt('easy')
+      return gen_values('easy')
     else:
-      return gen_values_alt('')
+      return gen_values('')
   else:
     return grid_values(blank)
 
@@ -375,3 +352,34 @@ def interact():
       print()
 
 interact()
+
+# Implemented a faster alternative now renamed to gen_values, this function, gen_values_prev, not necessary anymore?
+def gen_values_prev():
+  """This will generate and return a list of possible values for a grid with a unique solution."""
+  # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
+  global generating
+  generating = True
+  values = rand_solve(parse_values(grid_values(blank)))
+  rand_squares = list(squares)
+  while len(rand_squares) > 0:
+    s = rand_squares[randrange(0, len(rand_squares))]
+    removed_d = values[s]
+    values[s] = ' '
+    finished = check_solve(parse_values(values))
+    if finished in squares:
+      if not multiple:
+        values[s] = removed_d
+      generating = False
+      return values
+    rand_squares.remove(s)
+
+#TODO: values_grid necessary? Currently not being called/used
+def values_grid(values):
+  """Reverse of grid_values + parse_values, taking a dict of values as parameter and returns the sudoku board (grid) as a string"""
+  grid = ''
+  for s in squares:
+    if len(values[s]) > 1:
+      grid += '.'
+    else:
+      grid += ''.join(values[s])
+  return grid
