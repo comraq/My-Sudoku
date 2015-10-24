@@ -111,7 +111,7 @@ def display(values):
     # line is the horizontal line separating the square units 
     line = '+'.join(['-' * (width * n)] * n)
     for r in rows:
-      if r in [cols[i*n] for i in range(1,n)]:
+      if r in [rows[i*n] for i in range(1,n)]:
         print( line )
       for c in cols:
         if c in [cols[i*n] for i in range(1,n)]:
@@ -136,6 +136,8 @@ def eliminate(values, s, d):
   There are 2 cases for which propagation will occur:
     Case 1) If a square s is reduced to only one value remaining_d, then we eliminate all instances of remaining_d in its peers.
     Case 2) If a unit has only one place for value d, then we will put it there and eliminate d from the peers in its other units.
+    Case 3) a) If multiple values belonging in the same unit can only be placed in the same number of squares within their unit, then these values are exclusive to these squares and we can eliminate other occurances of these values in its peers (naked tuples)
+            b) If multiple squares can only take the same number of set of values in the squares, then they are treated as a tuple and other occurances of these values can be eliminated from their peers (hidden tuples)
   This will return values, however, if a contradiction is detected, this will return False"""
   # TODO: Need to add values elimination for logical rules such as naked/hidden tuples and etc...
   if d not in values[s]:
@@ -159,6 +161,17 @@ def eliminate(values, s, d):
       if not assign(values, places[0], d):
         return False
   return values
+
+def append_to_eliminate():
+  """This is just temporary code to be added/appended to eliminate"""
+  # Case 3) of propagation
+  # a) Naked Tuples
+  for tup_count in range(0,5):
+    for u in units[s]: 
+      places = [s for s in u if d in values[s]]
+      if len(places) == tup_count:
+        pass
+
 
 def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
