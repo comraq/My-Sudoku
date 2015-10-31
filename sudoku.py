@@ -143,7 +143,7 @@ def eliminate(values, s, d):
   if d not in values[s]:
     return values # Indicating that digit d was already eliminated from the possible values of square s
   values[s].remove(d)
-  # Case 1) of propagation
+  """# Case 1) of propagation"""
   if len(values[s]) == 0:
     return False # This is a contradiction as we just removed the last value
   """elif len(values[s]) == 1:
@@ -152,26 +152,32 @@ def eliminate(values, s, d):
       return False
   """
   # Case 3) of propagation
-  # a) Naked Tuples
-  # TODO: Since Naked and Hidden are working towards the same goal from opposite ends, perhaps Naked Tuples can stop if len(valus[s]) is greater than len(digits)/2
+  # a) Naked Tuples (Square perspective after eliminating a possible value/digit d from current square s, find remaining possible values/digits and tuples if squares share the same possible values/digits)
   for u in units[s]:
     tup_count = 1 # This count keeps track of how many squares with len(values) equal to the len(values) of the current square
     u = list(u)
     u.remove(s)
-    print( "Eliminated square: %s, now remaining: %s" % (s, u) )
+    # print( "Eliminated square: %s, now remaining: %s" % (s, u) )
     for sq in u:
       if tup_count == len(values[s]):
         break 
       if values[sq] == values[s]:
         tup_count += 1
         u.remove(sq)
-    print( "tup_count is: ", tup_count)
+    # print( "tup_count is: ", tup_count)
     # display( values )
     if tup_count == len(values[s]):
       for remaining_d in values[s]:
         if not all(eliminate(values, unit_s, remaining_d) for unit_s in u):
           return False
-  """"""
+  """""" 
+  # b) Hidden Tuples (Digit perspective, after eliminating digit d from a possible square s, find remaining possible squares and tuples if values/digits sharing the same squares)
+  # TODO: Adopt the val_list and tup_s approach where val_list is initialized with digit d and tup_s with all possible places for digit d
+  places = []
+  for u in units[s]:
+    places = [s for s in u if d in values[s]]
+    tup_count = len(places)
+    pass
   # Case 2) of propagation
   places = []
   for u in units[s]:
