@@ -153,9 +153,10 @@ def eliminate(values, s, d):
   """
   # Case 3) of propagation
   # a) Naked Tuples
-  # TODO: Need to make a deepcopy of u in units[s] during the following loops since the code will not want to mutate the global variable units
+  # TODO: Since Naked and Hidden are working towards the same goal from opposite ends, perhaps Naked Tuples can stop if len(valus[s]) is greater than len(digits)/2
   for u in units[s]:
-    tup_count = 0 # This count keeps track of how many squares with len(values) equal to the len(values) of the current square
+    tup_count = 1 # This count keeps track of how many squares with len(values) equal to the len(values) of the current square
+    u = list(u)
     u.remove(s)
     print( "Eliminated square: %s, now remaining: %s" % (s, u) )
     for sq in u:
@@ -165,10 +166,12 @@ def eliminate(values, s, d):
         tup_count += 1
         u.remove(sq)
     print( "tup_count is: ", tup_count)
-    if tup_count != '0':
+    # display( values )
+    if tup_count == len(values[s]):
       for remaining_d in values[s]:
         if not all(eliminate(values, unit_s, remaining_d) for unit_s in u):
           return False
+  """"""
   # Case 2) of propagation
   places = []
   for u in units[s]:
@@ -215,7 +218,7 @@ def check_solve(values):
       solved = check_solve(assign(values_copy, s, d))
       if solved in squares:
         return solved
-      elif isinstance(solved, dict):
+      elif solved:
         if verbose:
           print( "Found a Solution! s = %s, d = %s" % (s, d) )
           display(solved)
