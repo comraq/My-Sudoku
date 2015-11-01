@@ -152,6 +152,7 @@ def eliminate(values, s, d):
       return False
   """
   # Case 3) of propagation
+  # TODO: Perhaps efficiency can be increased by only checking tuples up to 4 as the result would yield the opposite tuple of 5 and so on
   # a) Naked Tuples (Square perspective after eliminating a possible value/digit d from current square s, find remaining possible values/digits and tuples if squares share the same possible values/digits)
   for u in units[s]:
     tup_count = 1 # This count keeps track of how many squares with len(values) equal to the len(values) of the current square
@@ -170,14 +171,31 @@ def eliminate(values, s, d):
       for remaining_d in values[s]:
         if not all(eliminate(values, unit_s, remaining_d) for unit_s in u):
           return False
-  """""" 
+  """ 
   # b) Hidden Tuples (Digit perspective, after eliminating digit d from a possible square s, find remaining possible squares and tuples if values/digits sharing the same squares)
   # TODO: Adopt the val_list and tup_s approach where val_list is initialized with digit d and tup_s with all possible places for digit d
   places = []
   for u in units[s]:
     places = [s for s in u if d in values[s]]
-    tup_count = len(places)
-    pass
+    if len(places) == 0:
+      return False # This is a contradiction as there is no available place for this value in its units
+    elif len(places) == 1:
+      # Digit d only has one available place in its units, we will assign it there
+      if not assign(values, places[0], d):
+        return False
+    elif:    
+      dup_list = [val for val in values[s] for s in places]
+      val_list = []
+      for val in dup_list:
+        if val not in val_list and val != d:
+          val_list.append(val)
+      tup_val_list = [d]
+      tup_places = places
+      for sq in u:
+        if len(tup_val_list) == len(tup_places):
+          break
+      pass
+  """
   # Case 2) of propagation
   places = []
   for u in units[s]:
@@ -189,16 +207,6 @@ def eliminate(values, s, d):
       if not assign(values, places[0], d):
         return False
   return values
-
-def append_to_eliminate():
-  """This is just temporary code to be added/appended to eliminate"""
-  # b) Hidden Tuples
-  for tup_count in range(0,5):
-    for u in units[s]: 
-      places = [s for s in u if d in values[s]]
-      if len(places) == tup_count:
-        pass
-
 
 def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
