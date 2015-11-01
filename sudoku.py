@@ -106,7 +106,7 @@ def grid_values(grid):
 
 def display(values):
   """This will display the values and the grid on the console in the traditional 2-D box formats"""
-  if isinstance(values, dict):
+  if len(values) != 1:
     width = 2 * max(len(values[s]) for s in squares) + 2 
     # line is the horizontal line separating the square units 
     line = '+'.join(['-' * (width * n)] * n)
@@ -233,84 +233,47 @@ def eliminate_tuple(values, s, d):
   return values
 
 def check_solve(values):
-  """This solve will thoroughly check the grid to ensure that there no multiple solutions. 
-     If multiple solutions are found, returns the square which can hold multiple possible values yielding the second solution. """
-  if values is False:
-    return False # This indicates that a recursive call to this function failed and its time to try another digit from values
-  if all(len(values[s]) == 1 for s in squares):
-    return values # All squares have only one possibility for values, in other words, SOLVED!
-  else:
-    solutions = {}
-    if verbose:
-      display(values)
-    rand_squares = list(squares)
-    while len(rand_squares) > 0:
-      s = rand_squares[randrange(0, len(rand_squares))]
-      if len(values[s]) > 1:
-        break
-      rand_squares.remove(s)
-    rand_values = list(values[s])
-    while len(rand_values) > 0:
-      d = rand_values[randrange(0, len(rand_values))]
-      values_copy = deepcopy(values)
-      solved = check_solve(assign(values_copy, s, d))
-      if solved in squares:
-        return solved
-      elif solved:
-        if verbose:
-          print( "Found a Solution! s = %s, d = %s" % (s, d) )
-          display(solved)
-        if solutions:
-          if not generating:
-            print( "Multiple solutions found!" )
-            display(solved)
-            display(solutions)
-          return s
-        else:
-          solutions = solved
-      rand_values.remove(d)
-    return solutions
-
-def check_solve_fast(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions.
-     If multiple solutions are found, returns the square which can hold multiple possible values yielding the second solution. """
+     If multiple solutions are found, returns a dict with length 1 where the square which can hold multiple possible values is the key and one of its possible digits as its value. """
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
     solutions = {}
-
     if verbose:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
-    min_vals, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
-
+    min_vals = n**2 + 1
     rand_squares = list(squares)
     while len(rand_squares) > 0:
       s = rand_squares[randrange(0, len(rand_squares))]
-      if len(values[s]) > 1:
+      if len(values[s]) == 2:
         break
-      rand_squares.remove(s)
+      if len(values[s]) > 1 and len(values[s]) < min_vals:
+        min_vals = len(values[s])
+      else:
+        rand_squares.remove(s)
     rand_values = list(values[s])
     while len(rand_values) > 0:
       d = rand_values[randrange(0, len(rand_values))]
       values_copy = deepcopy(values)
       solved = check_solve(assign(values_copy, s, d))
-      if solved in squares:
-        return solved
-      elif solved:
-        if verbose:
-          print( "Found a Solution! s = %s, d = %s" % (s, d) )
-          display(solved)
-        if solutions:
-          if not generating:
-            print( "Multiple solutions found!" )
+      if isinstance(solved, dict):
+        if len(solved) == 1:
+          return solved
+        elif len(solved) != 0:
+          if verbose:
+            print( "Found a Solution! s = %s, d = %s" % (s, d) )
             display(solved)
-            display(solutions)
-          return s
-        else:
-          solutions = solved
+          if solutions:
+            if not generating:
+              print( "Multiple solutions found!" )
+              display(solved)
+              display(solutions)
+            return {s: d}
+          else:
+            solutions = solved
       rand_values.remove(d)
     return solutions
       
@@ -328,40 +291,31 @@ def gen_values(diff):
     min_start = (n ** 4)/5
   else: 
     min_start = (n ** 4)/3
-  print( "Entering rand_solve", flush=True )
-  values = rand_solve(parse_values(grid_values(blank)))
-  print( "Finished rand_solve", flush=True )
+  print( "Generating a unique sudoku board...", flush=True )
+  values = fast_solve(parse_values(grid_values(blank)))
+  print( "Finished producing a sudoku board", flush=True )
   rand_squares = list(squares)
   while len(rand_squares) > min_start:
     s = rand_squares[randrange(0, len(rand_squares))]
     values[s] = ' '
     rand_squares.remove(s)
-  print( "Before multi check", flush=True )
+  print( "Checking for multiple solutions...", flush=True )
   # Check whether the generated Sudoku yields a unique solution, if not, add the square responsible for multiple solutions
+  add_s = 0
   if diff != 'multi':
     while True:
-      multi_s = check_solve(parse_values(values))
-      if multi_s in squares:
-        p_values = parse_values(values)
-        while len(p_values[multi_s]) > 0:
-          temp_values = deepcopy(p_values)
-          d = temp_values[multi_s][randrange(0, len(temp_values[multi_s]))]
-          if assign( temp_values, multi_s, d ):
-            p_values = temp_values
-            values[multi_s] = d
-            break
-          else:
-            p_values[multi_s].remove(d)
+      multi_sol = check_solve(parse_values(values))
+      if len(multi_sol) == 1:
+        for multi_s in multi_sol:
+          values[multi_s] = [multi_sol[multi_s]]
+          print( "Adding %s to square %s." % (multi_sol[multi_s], multi_s), flush = True )
+          add_s += 1
       else:
+        print( "Added %s squares to yield unique solution\n" % add_s )
         break
+  print( "Generated sudoku with %s number of given squares" % int(add_s + min_start))
   generating = False
   return values
-
-class Solve(object):
-  """This is the parent Solve class for various different solving algorithms, being extended by subclasses such as Fast_solve, Rand_solve and etc..."""
-  def __init__(self, grid):
-    self.grid = grid
-    self.values = grid.values(grid) 
 
 def fast_solve(values):
   """Since we are using the brute force method by trying each value, we will use depth-first search and propagation for efficiency."""
@@ -373,7 +327,6 @@ def fast_solve(values):
     if verbose:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
-    # min_vals, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
     min_vals = n**2 + 1
     rand_squares = list(squares)
     while len(rand_squares) > 0:
@@ -386,44 +339,16 @@ def fast_solve(values):
         rand_squares.remove(s)
     rand_values = list(values[s])
     while len(rand_values) > 0:
-    #for d in values[s]:
       d = rand_values[randrange(0, len(rand_values))]
       values_copy = deepcopy(values)
       solved = fast_solve(assign(values_copy, s, d))
       if solved:
         return solved
       else:
-        rand_values.remove(d)
-
-def rand_solve(values):
-  """A clone of fast_solve utilizing brute force on random squares instead of min_vals squares."""
-  # TODO: Need to find a faster algorithm for rand_solve as this is one of the bottlenecks of gen_values in terms of performance time
-  # According to research and studies, adding additional logical rule constraints can speed up the sudoku solving process. Adding elimination checking for rules such as naked/hidden tuples and etc...
-  if values is False:
-    return False
-  if all(len(values[s]) == 1 for s in squares):
-    return values
-  else:
-    if verbose:
-      display(values)
-    rand_squares = list(squares)
-    while len(rand_squares) > 0:
-      s = rand_squares[randrange(0, len(rand_squares))]
-      if len(values[s]) > 1:
-        break
-      rand_squares.remove(s)
-    rand_values = list(values[s])
-    while len(rand_values) > 0:
-      d = rand_values[randrange(0, len(rand_values))]
-      values_copy = deepcopy(values)
-      solved = rand_solve(assign(values_copy, s, d))
-      if solved:
-        return solved
-      else:
+        # Assigning digit d to square s resulted in False, now remove d from the list of possible values and try another digit
         rand_values.remove(d)
 
 def choose_grid():
-  global multiple
   diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
                'Enter q at anytime to quit\n')
   if 'q' in diff:
@@ -444,7 +369,6 @@ def choose_grid():
         return grid_values(multi[i])
     return gen_values('multi')
   elif 'g' in diff:
-    print( "Generated Sudoku" )
     if '2' in diff:
       return gen_values('hard')
     elif '1' in diff:
@@ -465,8 +389,7 @@ def interact():
                    'Include flags? (optional)\n'\
                    'd = display steps\n'\
                    'c = check solve\n'\
-                   'f = fast solve\n'\
-                   'r = random solve\n')
+                   'f = fast solve\n')
     if 'q' in choice:
       break
     elif not 's' in choice:
@@ -475,8 +398,6 @@ def interact():
         verbose = True
       if 'c' in choice:
         solve = check_solve(parse_values(grid))
-      elif 'r' in choice:
-        solve = rand_solve(parse_values(grid))
       else:
         solve = fast_solve(parse_values(grid))
       display(solve)
@@ -486,13 +407,20 @@ def interact():
 
 interact()
 
+# Unfinished code for a more object/class oriented approach
+class Solve(object):
+  """This is the parent Solve class for various different solving algorithms, being extended by subclasses such as Fast_solve, Rand_solve and etc..."""
+  def __init__(self, grid):
+    self.grid = grid
+    self.values = grid.values(grid) 
+
 # Implemented a faster alternative now renamed to gen_values, this function, gen_values_prev, not necessary anymore?
 def gen_values_prev():
   """This will generate and return a list of possible values for a grid with a unique solution."""
   # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
   global generating
   generating = True
-  values = rand_solve(parse_values(grid_values(blank)))
+  values = fast_solve(parse_values(grid_values(blank)))
   rand_squares = list(squares)
   while len(rand_squares) > 0:
     s = rand_squares[randrange(0, len(rand_squares))]
