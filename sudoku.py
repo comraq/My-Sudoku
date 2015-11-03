@@ -241,7 +241,7 @@ def check_solve(values):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
     solutions = {}
-    if verbose:
+    if verbose and not generating:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
     min_vals = n**2 + 1
@@ -263,7 +263,7 @@ def check_solve(values):
         if len(solved) == 1:
           return solved
         elif len(solved) != 0:
-          if verbose:
+          if verbose and not generating:
             print( "Found a Solution! s = %s, d = %s" % (s, d) )
             display(solved)
           if solutions:
@@ -291,15 +291,18 @@ def gen_values(diff):
     min_start = (n ** 4)/5
   else: 
     min_start = (n ** 4)/3
-  print( "Generating a unique sudoku board...", flush=True )
+  if verbose:
+    print( "Generating a unique sudoku board...", flush=True )
   values = fast_solve(parse_values(grid_values(blank)))
-  print( "Finished producing a sudoku board", flush=True )
+  if verbose:
+    print( "Finished producing a sudoku board", flush=True )
   rand_squares = list(squares)
   while len(rand_squares) > min_start:
     s = rand_squares[randrange(0, len(rand_squares))]
     values[s] = ' '
     rand_squares.remove(s)
-  print( "Checking for multiple solutions...", flush=True )
+  if verbose:
+    print( "Checking for multiple solutions...", flush=True )
   # Check whether the generated Sudoku yields a unique solution, if not, add the square responsible for multiple solutions
   add_s = 0
   if diff != 'multi':
@@ -308,12 +311,15 @@ def gen_values(diff):
       if len(multi_sol) == 1:
         for multi_s in multi_sol:
           values[multi_s] = [multi_sol[multi_s]]
-          print( "Adding %s to square %s." % (multi_sol[multi_s], multi_s), flush = True )
+          if verbose:
+            print( "Adding %s to square %s." % (multi_sol[multi_s], multi_s), flush = True )
           add_s += 1
       else:
-        print( "Added %s squares to yield unique solution\n" % add_s )
+        if verbose:
+          print( "Added %s squares to yield unique solution\n" % add_s )
         break
-  print( "Generated sudoku with %s number of given squares" % int(add_s + min_start))
+  if verbose:
+    print( "Generated sudoku with %s number of given squares" % int(add_s + min_start))
   generating = False
   return values
 
@@ -324,7 +330,7 @@ def fast_solve(values):
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
-    if verbose:
+    if verbose and not generating:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
     min_vals = n**2 + 1
@@ -349,6 +355,7 @@ def fast_solve(values):
         rand_values.remove(d)
 
 def choose_grid():
+  global verbose
   diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
                'Enter q at anytime to quit\n')
   if 'q' in diff:
@@ -369,6 +376,8 @@ def choose_grid():
         return grid_values(multi[i])
     return gen_values('multi')
   elif 'g' in diff:
+    if 'd' in diff:
+      verbose = True
     if '2' in diff:
       return gen_values('hard')
     elif '1' in diff:
@@ -379,12 +388,14 @@ def choose_grid():
     return grid_values(blank)
 
 def interact():
+  global verbose
   while True:
     initialize()
     grid = choose_grid()
     if not grid:
       break
     display(grid)
+    verbose = False
     choice = input('Press Enter to Solve Grid or s to select another Sudoku:\n'\
                    'Include flags? (optional)\n'\
                    'd = display steps\n'\
@@ -394,7 +405,6 @@ def interact():
       break
     elif not 's' in choice:
       if 'd' in choice:
-        global verbose
         verbose = True
       if 'c' in choice:
         solve = check_solve(parse_values(grid))
