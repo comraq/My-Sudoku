@@ -356,34 +356,29 @@ def fast_solve(values):
 
 def choose_grid():
   global verbose
-  diff = input('Choose Sudoku difficulty (ex: e1 = easy1, h2 = hard2, h = hard[random], nothing for empty Sudoku):\n'\
+  diff = input('Choose Sudoku difficulty (ex: e = easy, g = medium, h = hard, m = multi-solution sudoku, nothing for empty Sudoku):\n'\
                'Enter q at anytime to quit\n')
   if 'q' in diff:
     return False
+  if 'd' in diff:
+    verbose = True
   if 'e' in diff:
     for i in range(0, len(easy)):
       if str(i+1) in diff:
         return grid_values(easy[i])
-    return grid_values(easy[randrange(0, len(easy))])
+    return gen_values('easy')
   elif 'h' in diff:
     for i in range(0, len(hard)):
       if str(i+1) in diff:
         return grid_values(hard[i])
-    return grid_values(hard[randrange(0, len(hard))])
+    return gen_values('hard')
   elif 'm' in diff:
     for i in range(0, len(multi)):
       if str(i+1) in diff:
         return grid_values(multi[i])
     return gen_values('multi')
   elif 'g' in diff:
-    if 'd' in diff:
-      verbose = True
-    if '2' in diff:
-      return gen_values('hard')
-    elif '1' in diff:
-      return gen_values('easy')
-    else:
-      return gen_values('')
+    return gen_values('')
   else:
     return grid_values(blank)
 
