@@ -159,79 +159,6 @@ def eliminate(values, s, d):
         return False
   return values
 
-def eliminate_tuple(values, s, d):
-  """This will eliminate d from the values of square s, ie from values[s]; will also progate its impact values or places < 2.
-    Case 3) a) If multiple values belonging in the same unit can only be placed in the same number of squares within their unit, then these values are exclusive to these squares and we can eliminate other occurances of these values in its peers (hidden tuples)
-            b) If multiple squares can only take the same number of set of values in the squares, then they are treated as a tuple and other occurances of these values can be eliminated from their peers (naked tuples)
-  This will return the updated values, however if a contradiction is detected, this will return False"""
-  # TODO: With tuple checking, eliminate seems to solve slower than without, need to improve speed
-  if d not in values[s]:
-    return values # Indicating that digit d was already eliminated from the possible values of square s
-  values[s].remove(d)
-  # Case 3) of propagation
-  # TODO: Perhaps efficiency can be increased by only checking tuples up to 4 as the result would yield the opposite tuple of 5 and so on
-  # TODO: Add tuple checking capabilities across multiple units, amongst peers, (only possible with where each len(tup_s) == 2)
-  # a) Hidden Tuples (Square perspective after eliminating a possible value/digit d from current square s, find remaining possible values/digits and tuples if squares share the same possible values/digits)
-  for u in units[s]:
-    tup_s = [s]
-    val_list = values[s]
-    #print( "Removing %s from square %s" % (d, s) )
-    #print( "tup_s: %s val_list: %s" % (tup_s, val_list) )
-    #print( u )
-    # display( values )
-    if len(val_list) < len(tup_s):
-      return False
-    elif len(val_list) > len(tup_s):
-      remaining_s = list(set(u)-set(tup_s))
-      for sq in remaining_s:
-        if list(set(val_list).intersection(values[sq])):
-          val_list = list(set(val_list).union(set(values[sq])))
-          tup_s.append(sq)
-        if len(tup_s) > 4 or len(val_list) > 4:
-          break
-    # print( "tup_s: %s val_list: %s" % (tup_s, val_list) )
-    if len(val_list) < n**2 and len(val_list) == len(tup_s):
-      remaining_s = list(set(u)-set(tup_s))
-      for remaining_d in val_list:
-        if not all(eliminate(values, sq, remaining_d) for sq in remaining_s):
-          return False
-  """
-  # b) Naked Tuples (Digit perspective, after eliminating digit d from a possible square s, find remaining possible squares and tuples if values/digits sharing the same squares)
-  # TODO: Adopt the val_list and tup_s approach where val_list is initialized with digit d and tup_s with all possible places for digit d
-  places = []
-  for u in units[s]:
-    places = [s for s in u if d in values[s]]
-    if len(places) == 0:
-      return False # This is a contradiction as there is no available place for this value in its units
-    elif len(places) == 1:
-      # Digit d only has one available place in its units, we will assign it there
-      if not assign(values, places[0], d):
-        return False
-    elif:
-      dup_list = [val for val in values[s] for s in places]
-      val_list = []
-      for val in dup_list:
-        if val not in val_list and val != d:
-          val_list.append(val)
-      tup_val_list = [d]
-      tup_places = places
-      for sq in u:
-        if len(tup_val_list) == len(tup_places):
-          break
-      pass
-  """
-  # Case 2) of propagation
-  places = []
-  for u in units[s]:
-    places = [s for s in u if d in values[s]]
-    if len(places) == 0:
-      return False # This is a contradiction as there is no available place for this value in its units
-    elif len(places) == 1:
-      # Digit d only has one available place in its units, we will assign it there
-      if not assign(values, places[0], d):
-        return False
-  return values
-
 def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions.
      If multiple solutions are found, returns a dict with length 1 where the square which can hold multiple possible values is the key and one of its possible digits as its value. """
@@ -411,6 +338,81 @@ def interact():
       print()
 
 interact()
+
+""" Below are unfinished/deprecated code """
+
+def eliminate_tuple(values, s, d):
+  """This will eliminate d from the values of square s, ie from values[s]; will also progate its impact values or places < 2.
+    Case 3) a) If multiple values belonging in the same unit can only be placed in the same number of squares within their unit, then these values are exclusive to these squares and we can eliminate other occurances of these values in its peers (hidden tuples)
+            b) If multiple squares can only take the same number of set of values in the squares, then they are treated as a tuple and other occurances of these values can be eliminated from their peers (naked tuples)
+  This will return the updated values, however if a contradiction is detected, this will return False"""
+  # TODO: With tuple checking, eliminate seems to solve slower than without, need to improve speed
+  if d not in values[s]:
+    return values # Indicating that digit d was already eliminated from the possible values of square s
+  values[s].remove(d)
+  # Case 3) of propagation
+  # TODO: Perhaps efficiency can be increased by only checking tuples up to 4 as the result would yield the opposite tuple of 5 and so on
+  # TODO: Add tuple checking capabilities across multiple units, amongst peers, (only possible with where each len(tup_s) == 2)
+  # a) Hidden Tuples (Square perspective after eliminating a possible value/digit d from current square s, find remaining possible values/digits and tuples if squares share the same possible values/digits)
+  for u in units[s]:
+    tup_s = [s]
+    val_list = values[s]
+    #print( "Removing %s from square %s" % (d, s) )
+    #print( "tup_s: %s val_list: %s" % (tup_s, val_list) )
+    #print( u )
+    # display( values )
+    if len(val_list) < len(tup_s):
+      return False
+    elif len(val_list) > len(tup_s):
+      remaining_s = list(set(u)-set(tup_s))
+      for sq in remaining_s:
+        if list(set(val_list).intersection(values[sq])):
+          val_list = list(set(val_list).union(set(values[sq])))
+          tup_s.append(sq)
+        if len(tup_s) > 4 or len(val_list) > 4:
+          break
+    # print( "tup_s: %s val_list: %s" % (tup_s, val_list) )
+    if len(val_list) < n**2 and len(val_list) == len(tup_s):
+      remaining_s = list(set(u)-set(tup_s))
+      for remaining_d in val_list:
+        if not all(eliminate(values, sq, remaining_d) for sq in remaining_s):
+          return False
+  """
+  # b) Naked Tuples (Digit perspective, after eliminating digit d from a possible square s, find remaining possible squares and tuples if values/digits sharing the same squares)
+  # TODO: Adopt the val_list and tup_s approach where val_list is initialized with digit d and tup_s with all possible places for digit d
+  places = []
+  for u in units[s]:
+    places = [s for s in u if d in values[s]]
+    if len(places) == 0:
+      return False # This is a contradiction as there is no available place for this value in its units
+    elif len(places) == 1:
+      # Digit d only has one available place in its units, we will assign it there
+      if not assign(values, places[0], d):
+        return False
+    elif:
+      dup_list = [val for val in values[s] for s in places]
+      val_list = []
+      for val in dup_list:
+        if val not in val_list and val != d:
+          val_list.append(val)
+      tup_val_list = [d]
+      tup_places = places
+      for sq in u:
+        if len(tup_val_list) == len(tup_places):
+          break
+      pass
+  """
+  # Case 2) of propagation
+  places = []
+  for u in units[s]:
+    places = [s for s in u if d in values[s]]
+    if len(places) == 0:
+      return False # This is a contradiction as there is no available place for this value in its units
+    elif len(places) == 1:
+      # Digit d only has one available place in its units, we will assign it there
+      if not assign(values, places[0], d):
+        return False
+  return values
 
 # Unfinished code for a more object/class oriented approach
 class Solve(object):
