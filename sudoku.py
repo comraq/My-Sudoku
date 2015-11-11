@@ -174,13 +174,15 @@ def check_solve(values):
     min_vals = n**2 + 1
     rand_squares = list(squares)
     while len(rand_squares) > 0:
-      s = rand_squares[randrange(0, len(rand_squares))]
-      if len(values[s]) == 2:
-        break
-      if len(values[s]) > 1 and len(values[s]) < min_vals:
-        min_vals = len(values[s])
-      else:
-        rand_squares.remove(s)
+      rand_s = rand_squares[randrange(0, len(rand_squares))]
+      if  len(values[rand_s]) != 1:
+        if len(values[rand_s]) == 2:
+          s = rand_s
+          break
+        if len(values[rand_s]) < min_vals:
+          min_vals = len(values[rand_s])
+          s = rand_s
+      rand_squares.remove(rand_s)
     rand_values = list(values[s])
     while len(rand_values) > 0:
       d = rand_values[randrange(0, len(rand_values))]
@@ -263,6 +265,7 @@ def fast_solve(values):
     min_vals = n**2 + 1
     rand_squares = list(squares)
     while len(rand_squares) > 0:
+      """
       s = rand_squares[randrange(0, len(rand_squares))]
       if len(values[s]) == 2:
         break
@@ -270,6 +273,16 @@ def fast_solve(values):
         min_vals = len(values[s])
       else:
         rand_squares.remove(s)
+      """
+      rand_s = rand_squares[randrange(0, len(rand_squares))]
+      if  len(values[rand_s]) != 1:
+        if len(values[rand_s]) == 2:
+          s = rand_s
+          break
+        if len(values[rand_s]) < min_vals:
+          min_vals = len(values[rand_s])
+          s = rand_s 
+      rand_squares.remove(rand_s)
     rand_values = list(values[s])
     while len(rand_values) > 0:
       d = rand_values[randrange(0, len(rand_values))]
