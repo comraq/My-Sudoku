@@ -17,6 +17,9 @@ verbose = False
 # Flag used for the generation of Sudokus
 generating = False
 
+# Pointer to second solution for mutli-soltuion Sudokus
+solutions = {}
+
 # Declare the necessary global variables
 n = 3
 digits = []
@@ -162,12 +165,12 @@ def eliminate(values, s, d):
 def check_solve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions.
      If multiple solutions are found, returns a dict with length 1 where the square which can hold multiple possible values is the key and one of its possible digits as its value. """
+  global solutions
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
     return values # All squares have only one possibility for values, in other words, SOLVED!
   else:
-    solutions = {}
     if verbose and not generating:
       display(values)
     # Chosing an unfilled square s with the fewest possible values
@@ -200,6 +203,7 @@ def check_solve(values):
               print( "Multiple solutions found!" )
               display(solved)
               display(solutions)
+              solutions = {}
             return {s: d}
           else:
             solutions = solved
@@ -351,6 +355,7 @@ def interact():
       print()
 
 interact()
+
 
 """ Below are unfinished/deprecated code """
 
