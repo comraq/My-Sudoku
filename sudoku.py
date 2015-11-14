@@ -17,6 +17,9 @@ verbose = False
 # Flag used for the generation of Sudokus
 generating = False
 
+# Flag used for identifying multi-solution Sudokus
+multi = False
+
 # Pointer to second solution for mutli-soltuion Sudokus
 solutions = {}
 
@@ -122,7 +125,7 @@ def display(values):
         print( '('+' '.join(values[r+c])+')'+' '*(width - 2 - len(' '.join(values[r+c]))), end='')
       print()
     print( flush=True )
-    sleep(.2)
+    #sleep(.2)
 
 def assign(values, s, d):
   """This will remove all values in each square s but leave only d and propagate any impact which this might have on the peers of the square.
@@ -160,12 +163,18 @@ def eliminate(values, s, d):
       # Digit d only has one available place in its units, we will assign it there
       if not assign(values, places[0], d):
         return False
-  return values
+  return values  
 
 def check_solve(values):
+  global multi
+  multi = False
+  return cSolve(values)
+
+def cSolve(values):
   """This solve will thoroughly check the grid to ensure that there no multiple solutions.
      If multiple solutions are found, returns a dict with length 1 where the square which can hold multiple possible values is the key and one of its possible digits as its value. """
   global solutions
+  global multi
   if values is False:
     return False # This indicates that a recursive call to this function failed and its time to try another digit from values
   if all(len(values[s]) == 1 for s in squares):
@@ -191,7 +200,7 @@ def check_solve(values):
       d = rand_values[randrange(0, len(rand_values))]
       values_copy = deepcopy(values)
       solved = check_solve(assign(values_copy, s, d))
-      if isinstance(solved, dict):
+      if isinstance(solved, dict) and not multi:
         if len(solved) == 1:
           return solved
         elif len(solved) != 0:
@@ -208,6 +217,7 @@ def check_solve(values):
           else:
             solutions = solved
       rand_values.remove(d)
+    multi = True
     return solutions
       
 def gen_values(diff):
@@ -269,15 +279,6 @@ def fast_solve(values):
     min_vals = n**2 + 1
     rand_squares = list(squares)
     while len(rand_squares) > 0:
-      """
-      s = rand_squares[randrange(0, len(rand_squares))]
-      if len(values[s]) == 2:
-        break
-      if len(values[s]) > 1 and len(values[s]) < min_vals:
-        min_vals = len(values[s])
-      else:
-        rand_squares.remove(s)
-      """
       rand_s = rand_squares[randrange(0, len(rand_squares))]
       if  len(values[rand_s]) != 1:
         if len(values[rand_s]) == 2:
@@ -431,33 +432,6 @@ def eliminate_tuple(values, s, d):
       if not assign(values, places[0], d):
         return False
   return values
-
-# Unfinished code for a more object/class oriented approach
-class Solve(object):
-  """This is the parent Solve class for various different solving algorithms, being extended by subclasses such as Fast_solve, Rand_solve and etc..."""
-  def __init__(self, grid):
-    self.grid = grid
-    self.values = grid.values(grid) 
-
-# Implemented a faster alternative now renamed to gen_values, this function, gen_values_prev, not necessary anymore?
-def gen_values_prev():
-  """This will generate and return a list of possible values for a grid with a unique solution."""
-  # The absolute mininmum of initial numbers in a Sudoku before reaching multiple solutions is 17
-  global generating
-  generating = True
-  values = fast_solve(parse_values(grid_values(blank)))
-  rand_squares = list(squares)
-  while len(rand_squares) > 0:
-    s = rand_squares[randrange(0, len(rand_squares))]
-    removed_d = values[s]
-    values[s] = ' '
-    finished = check_solve(parse_values(values))
-    if finished in squares:
-      if not multiple:
-        values[s] = removed_d
-      generating = False
-      return values
-    rand_squares.remove(s)
 
 #TODO: values_grid necessary? Currently not being called/used
 def values_grid(values):
